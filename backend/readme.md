@@ -12,6 +12,7 @@
 
 ### Run Django migrations:
 	cd eatsdrinks
+ 	python manage.py makemigratinons
  	python manage.py migrate
 
 ### Start the Django development server:
