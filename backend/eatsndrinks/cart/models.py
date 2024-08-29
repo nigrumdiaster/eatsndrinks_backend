@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import Account
-from products.models import Product
+from catalogue.models import Product
 
 class Cart(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
