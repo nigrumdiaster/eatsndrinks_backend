@@ -7,8 +7,8 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    show = models.BooleanField(default=True)
-    deleted = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
     def __str__(self):
         return self.name
 
@@ -24,8 +24,8 @@ class Product(models.Model):
         null=True,
         blank=True,
     )
-    show = models.BooleanField(default=True)
-    deleted = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

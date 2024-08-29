@@ -5,8 +5,8 @@
         "fields": {
             "name": "Beverages",
             "description": "A variety of drinks including soft drinks, juices, and water.",
-            "show": true,
-            "deleted": false
+            "is_active": true,
+            "is_deleted": false
         }
     },
     {
@@ -15,8 +15,8 @@
         "fields": {
             "name": "Snacks",
             "description": "Light and quick snacks for any time of the day.",
-            "show": true,
-            "deleted": false
+            "is_active": true,
+            "is_deleted": false
         }
     },
     {
@@ -25,8 +25,8 @@
         "fields": {
             "name": "Dairy",
             "description": "Milk, cheese, yogurt, and other dairy products.",
-            "show": true,
-            "deleted": false
+            "is_active": true,
+            "is_deleted": false
         }
     },
     {
@@ -35,8 +35,8 @@
         "fields": {
             "name": "Bakery",
             "description": "Freshly baked bread, pastries, and cakes.",
-            "show": true,
-            "deleted": false
+            "is_active": true,
+            "is_deleted": false
         }
     },
     {
@@ -47,8 +47,8 @@
             "description": "Classic cola drink.",
             "price": "1.99",
             "category": 1,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -61,8 +61,8 @@
             "description": "Freshly squeezed orange juice.",
             "price": "2.49",
             "category": 1,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -75,8 +75,8 @@
             "description": "Crispy potato chips.",
             "price": "1.49",
             "category": 2,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -89,8 +89,8 @@
             "description": "Delicious milk chocolate bar.",
             "price": "1.79",
             "category": 2,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -103,8 +103,8 @@
             "description": "Aged cheddar cheese.",
             "price": "5.99",
             "category": 3,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -117,8 +117,8 @@
             "description": "Creamy Greek yogurt.",
             "price": "3.49",
             "category": 3,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -131,8 +131,8 @@
             "description": "Freshly baked sourdough bread.",
             "price": "4.49",
             "category": 4,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
@@ -145,8 +145,8 @@
             "description": "Flaky, buttery croissant.",
             "price": "2.99",
             "category": 4,
-            "show": true,
-            "deleted": false,
+            "is_active": true,
+            "is_deleted": false,
             "created_at": "2024-08-29T12:00:00Z",
             "updated_at": "2024-08-29T12:00:00Z"
         }
