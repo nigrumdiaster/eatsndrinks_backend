@@ -3,7 +3,8 @@ from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAdminUser
-
+from rest_framework.response import Response
+from rest_framework import status
 # Category ViewSet
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -45,7 +46,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
         responses={201: CategorySerializer},
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        return Response(
+            {"message": "Danh mục mới đã được tạo thành công!", "data": response.data},
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(
         summary="Cập nhật một danh mục",
@@ -54,7 +59,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
         responses={200: CategorySerializer},
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        return Response(
+            {"message": "Danh mục đã được cập nhật thành công!", "data": response.data},
+            status=status.HTTP_200_OK,
+        )
 
     @extend_schema(
         summary="Cập nhật một phần của danh mục",
@@ -63,7 +72,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
         responses={200: CategorySerializer},
     )
     def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
+        response = super().partial_update(request, *args, **kwargs)
+        return Response(
+            {"message": "Danh mục đã được cập nhật thành công!", "data": response.data},
+            status=status.HTTP_200_OK,
+        )
 
 
 # Product ViewSet
@@ -106,7 +119,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         responses={201: ProductSerializer},
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        return Response(
+            {"message": "Sản phẩm mới đã được tạo thành công!", "data": response.data},
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(
         summary='Cập nhật một sản phẩm',
@@ -115,7 +132,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         responses={200: ProductSerializer},
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        return Response(
+            {"message": "Sản phẩm đã được cập nhật thành công!", "data": response.data},
+            status=status.HTTP_200_OK,
+        )
 
     @extend_schema(
         summary='Cập nhật một phần của sản phẩm',
@@ -124,4 +145,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         responses={200: ProductSerializer},
     )
     def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
+        response = super().partial_update(request, *args, **kwargs)
+        return Response(
+            {"message": "Sản phẩm đã được cập nhật thành công!", "data": response.data},
+            status=status.HTTP_200_OK,
+        )

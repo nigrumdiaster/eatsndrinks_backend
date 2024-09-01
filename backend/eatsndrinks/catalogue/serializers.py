@@ -10,3 +10,8 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ["pk", "name", "description", "is_active", "quantity", "price", "category", "created_at", "updated_at"]
+
+    def validate_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Giá không thể âm.")
+        return value
