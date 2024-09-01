@@ -1,12 +1,23 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 # Create your models here.
 
 
 class User(AbstractUser):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^0[0-9]{9}$',
+                message="Số điện thoại phải bắt đầu bằng 0 và theo sau là 9 chữ số.",
+            )
+        ]
+    )
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
 

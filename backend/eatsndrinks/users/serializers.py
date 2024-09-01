@@ -37,10 +37,10 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Tên người dùng không được để trống.")
         return value
 
-    # def validate_password(self, value):
-    #     """
-    #     Check if the password meets a minimum length. Custom validation message.
-    #     """
-    #     if len(value) < 8:
-    #         raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự.")
-    #     return value
+    def validate_password(self, value):
+        """
+        Check if the password meets a minimum length. Custom validation message.
+        """
+        if len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự.")
+        return value
