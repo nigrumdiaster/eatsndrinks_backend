@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
 from drf_spectacular.utils import extend_schema
-
+from rest_framework.permissions import AllowAny, IsAdminUser
 
 # Category ViewSet
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -10,25 +10,37 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     http_method_names = ["get", "post", "put", "patch"]
 
+    def get_permissions(self):
+        """
+        Đặt quyền truy cập cho từng phương thức.
+        """
+        if self.request.method == 'GET':
+            permission_classes = [AllowAny]  # Phân quyền cho phương thức GET
+        elif self.request.method in ['POST', 'PUT', 'PATCH']:
+            permission_classes = [IsAdminUser]  # Phân quyền cho phương thức POST, PUT, PATCH
+
+        return [permission() for permission in permission_classes]
+
+
     @extend_schema(
-        summary="List all categories",
-        description="Retrieve a list of all categories.",
+        summary="Danh sách tất cả các danh mục",
+        description="Lấy danh sách tất cả các danh mục có sẵn.",
         responses={200: CategorySerializer(many=True)},
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Retrieve a category",
-        description="Get detailed information about a specific category.",
+        summary="Lấy thông tin một danh mục",
+        description="Nhận thông tin chi tiết về một danh mục cụ thể.",
         responses={200: CategorySerializer},
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Create a new category",
-        description="Create a new category with the provided data.",
+        summary="Tạo một danh mục mới",
+        description="Tạo một danh mục mới với dữ liệu đã cung cấp.",
         request=CategorySerializer,
         responses={201: CategorySerializer},
     )
@@ -36,8 +48,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Update a category",
-        description="Update an existing category with the provided data.",
+        summary="Cập nhật một danh mục",
+        description="Cập nhật một danh mục hiện có với dữ liệu đã cung cấp.",
         request=CategorySerializer,
         responses={200: CategorySerializer},
     )
@@ -45,8 +57,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Partially update a category",
-        description="Partially update an existing category with the provided data.",
+        summary="Cập nhật một phần của danh mục",
+        description="Cập nhật một phần của danh mục hiện có với dữ liệu đã cung cấp.",
         request=CategorySerializer,
         responses={200: CategorySerializer},
     )
@@ -60,25 +72,36 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     http_method_names = ["get", "post", "put", "patch"]
 
+    def get_permissions(self):
+        """
+        Đặt quyền truy cập cho từng phương thức.
+        """
+        if self.request.method == 'GET':
+            permission_classes = [AllowAny]  # Phân quyền cho phương thức GET
+        elif self.request.method in ['POST', 'PUT', 'PATCH']:
+            permission_classes = [IsAdminUser]  # Phân quyền cho phương thức POST, PUT, PATCH
+            
+        return [permission() for permission in permission_classes]
+
     @extend_schema(
-        summary='List all products',
-        description='Retrieve a list of all products.',
+        summary='Danh sách tất cả các sản phẩm',
+        description='Lấy danh sách tất cả các sản phẩm có sẵn.',
         responses={200: ProductSerializer(many=True)},
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
-        summary='Retrieve a product',
-        description='Get detailed information about a specific product.',
+        summary='Lấy thông tin một sản phẩm',
+        description='Nhận thông tin chi tiết về một sản phẩm cụ thể.',
         responses={200: ProductSerializer},
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
 
     @extend_schema(
-        summary='Create a new product',
-        description='Create a new product with the provided data.',
+        summary='Tạo một sản phẩm mới',
+        description='Tạo một sản phẩm mới với dữ liệu đã cung cấp.',
         request=ProductSerializer,
         responses={201: ProductSerializer},
     )
@@ -86,8 +109,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
-        summary='Update a product',
-        description='Update an existing product with the provided data.',
+        summary='Cập nhật một sản phẩm',
+        description='Cập nhật một sản phẩm hiện có với dữ liệu đã cung cấp.',
         request=ProductSerializer,
         responses={200: ProductSerializer},
     )
@@ -95,11 +118,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
-        summary='Partially update a product',
-        description='Partially update an existing product with the provided data.',
+        summary='Cập nhật một phần của sản phẩm',
+        description='Cập nhật một phần của sản phẩm hiện có với dữ liệu đã cung cấp.',
         request=ProductSerializer,
         responses={200: ProductSerializer},
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
-

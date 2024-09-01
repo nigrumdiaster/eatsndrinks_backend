@@ -1,10 +1,10 @@
 from django.db import models
-from accounts.models import Account
+from users.models import User
 from catalogue.models import Product
 
 class Cart(models.Model):
-    account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
     class Meta:
@@ -12,4 +12,4 @@ class Cart(models.Model):
         verbose_name_plural = "Giỏ Hàng"
     
     def __str__(self):
-        return f"MKH: {self.account.id} - Tên Sản Phẩm: {self.product.name if self.product else 'N/A'}"
+        return f"MKH: {self.user.id} - Tên Sản Phẩm: {self.product.name if self.product else 'N/A'}"
