@@ -1,4 +1,5 @@
 # How to run backend:
+Prequisites: python 3.10
 ### Create and activate virtual environment:
 	python -m venv env
 	# For Windows Command Prompt
@@ -11,8 +12,8 @@
 	pip install -r requirements.txt
 
 ### Run Django migrations:
-	cd eatsdrinks
- 	python manage.py makemigratinons
+	cd eatsndrinks
+ 	python manage.py makemigrations
  	python manage.py migrate
 
 ### Start the Django development server:
