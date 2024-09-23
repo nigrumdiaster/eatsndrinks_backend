@@ -1,5 +1,5 @@
 # How to run backend:
-Prequisites: python 3.10
+Prerequisites: python 3.10
 ### Create and activate virtual environment:
 	python -m venv env
 	# For Windows Command Prompt
