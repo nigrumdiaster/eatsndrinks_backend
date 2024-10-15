@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "contact",
     "content",
     "catalogue",
+    "order",
     "restaurants",
     "reviews",
     "search",
