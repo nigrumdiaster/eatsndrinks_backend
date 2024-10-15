@@ -1,7 +1,7 @@
 from django.db import models
 from catalogue.models import Product
 from users.models import User
-
+from django.core.validators import RegexValidator
 class Order(models.Model):
     STATUS_CHOICES = (
         ("cxl", 'Chưa Xử Lý'),
@@ -19,6 +19,18 @@ class Order(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    phone_number = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^0[0-9]{9}$',
+                message="Số điện thoại phải bắt đầu bằng 0 và theo sau là 9 chữ số.",
+            )
+        ]
+    )
+    address = models.TextField(blank=True, null=True)
     total_price = models.IntegerField()
     notes = models.CharField(max_length=150, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
