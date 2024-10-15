@@ -14,7 +14,7 @@ class Review(models.Model):
     content_object = GenericForeignKey('content_type', 'object_id')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'Review by {self.user.username} for {self.content_object}'

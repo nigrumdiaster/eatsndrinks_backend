@@ -1,5 +1,15 @@
 # How to run backend:
-Prerequisites: python 3.10
+Prerequisites: - python 3.10
+			   
+### MySQL connect:
+Setting your connect in this directory
+
+    eatsndrinks/eatsndrinks/settings.py
+
+The default passowrd for MySQL should be:
+    
+    123456
+
 ### Create and activate virtual environment:
 	python -m venv env
 	# For Windows Command Prompt
