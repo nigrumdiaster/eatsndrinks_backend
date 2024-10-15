@@ -4,12 +4,22 @@ from catalogue.models import Product
 
 class Cart(models.Model):
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
-    quantity = models.IntegerField(default=1)
 
     class Meta:
         verbose_name = "Giỏ Hàng"
         verbose_name_plural = "Giỏ Hàng"
     
     def __str__(self):
-        return f"MKH: {self.user.id} - Tên Sản Phẩm: {self.product.name if self.product else 'N/A'}"
+        return f"MKH: {self.user.id} - MGH: {self.id}"
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = "Sản Phẩm Trong Giỏ Hàng"
+        verbose_name_plural = "Sản Phẩm Trong Giỏ Hàng"
+    
+    def __str__(self):
+        return f"MGH: {self.cart.id} - Tên Sản Phẩm: {self.product.name if self.product else 'N/A'}"
