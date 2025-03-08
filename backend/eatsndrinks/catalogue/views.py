@@ -12,24 +12,61 @@ from .serializers import CategorySerializer, ProductSerializer, ProductImageSeri
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status, viewsets
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.core.paginator import Paginator, EmptyPage
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status, viewsets
 
-# Category ViewSet
+
 class CategoryViewSet(
     CustomPermissionMixin, CategorySchemaMixin, viewsets.ModelViewSet
 ):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     http_method_names = ["get", "post", "put", "patch"]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="limit",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="Number of products to return (optional)",
+            )
+        ]
+    )
     @action(detail=True, methods=["get"], url_path="products")
     def get_products(self, request, pk=None):
-        """Fetch products belonging to a specific category."""
+        """Fetch products belonging to a specific category with an optional limit."""
         try:
             category = self.get_object()
             products = Product.objects.filter(category=category)
-            serializer = ProductSerializer(products, many=True, context={"request": request})
+
+            # Get 'limit' query param, default to None (no limit)
+            limit = request.query_params.get("limit")
+
+            if limit is not None:
+                try:
+                    limit = int(limit)
+                    products = products[:limit]
+                except ValueError:
+                    return Response(
+                        {"detail": "Invalid limit value. Must be an integer."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            serializer = ProductSerializer(
+                products, many=True, context={"request": request}
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Category.DoesNotExist:
-            return Response({"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class ProductPageNumberPagination(PageNumberPagination):
