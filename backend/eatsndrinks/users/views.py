@@ -6,20 +6,21 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
 from drf_spectacular.utils import extend_schema
-from .serializers import UserSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserUpdateSerializer
 from rest_framework.permissions import AllowAny
 from .models import User
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 # Create your views here.
 # Register APIView
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        request=UserSerializer,
+        request=RegisterSerializer,
         responses={
-            201: UserSerializer,
+            201: RegisterSerializer,
             400: {
                 'type': 'object',
                 'properties': {
@@ -36,7 +37,7 @@ class RegisterView(APIView):
         }
     )
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {
@@ -120,26 +121,29 @@ class LoginView(APIView):
             'access': str(refresh.access_token),
         }, status=status.HTTP_200_OK)
     
-# class CustomTokenRefreshView(TokenRefreshView):
-#     def post(self, request, *args, **kwargs):
-#         try:
-#             serializer = self.get_serializer(data=request.data)
-#             serializer.is_valid(raise_exception=True)
 
-#             # Lấy user_id từ refresh token
-#             refresh_token = serializer.validated_data['refresh']
-#             refresh = RefreshToken(refresh_token)
-#             user_id = refresh['user_id']
-            
-#             # Lấy thông tin người dùng
-#             user = User.objects.get(id=user_id)
-#             if not user.is_active:
-#                 return Response({"error": "User account is disabled."}, status=status.HTTP_403_FORBIDDEN)
 
-#             # Nếu người dùng hợp lệ, trả về access token mới
-#             return Response({
-#                 'access': str(refresh.access_token),
-#             }, status=status.HTTP_200_OK)
-            
-#         except TokenError as e:
-#             raise InvalidToken(e.args[0])
+# Admin: List all users (GET only)
+class AdminUserListView(ListAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = UserUpdateSerializer
+
+# Admin: Retrieve & Update a specific user
+class AdminUserDetailView(RetrieveUpdateAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = UserUpdateSerializer
+    lookup_field = "id"
+
+# User: Edit own profile (except username)
+class UserDetailView(RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserUpdateSerializer
+
+    def get_object(self):
+        return self.request.user
+
+    def perform_update(self, serializer):
+        serializer.validated_data.pop('username', None)  # Prevent updating username
+        return super().perform_update(serializer)

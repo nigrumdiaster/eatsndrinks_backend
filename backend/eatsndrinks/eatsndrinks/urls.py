@@ -8,6 +8,7 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('catalogue/', include('catalogue.urls')),
     path('cart/', include('cart.urls')),
+    path('order/', include('order.urls')),
     
     # Endpoint for generating the OpenAPI schema
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

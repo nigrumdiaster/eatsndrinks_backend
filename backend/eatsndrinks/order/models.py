@@ -42,7 +42,7 @@ class Order(models.Model):
         verbose_name_plural = "Đơn Hàng"
 
     def __str__(self):
-        return "Mã Đơn Hàng: " + str(self.id) + " - Khách Hàng: " + self.user.first_name + " " + self.user.last_name + " - Tổng Tiền: " + str(self.total_amount) + " - Thời Gian: " + self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        return "Mã Đơn Hàng: " + str(self.id) + " - Khách Hàng: " + self.user.first_name + " " + self.user.last_name + " - Tổng Tiền: " + str(self.total_price) + " - Thời Gian: " + self.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
 class OrderDetail(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)

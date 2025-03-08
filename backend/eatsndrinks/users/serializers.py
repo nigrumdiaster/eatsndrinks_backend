@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User
 
 
-class UserSerializer(serializers.ModelSerializer):
+class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "password", "first_name", "last_name"]
@@ -44,3 +44,22 @@ class LoginSerializer(serializers.Serializer):
         if len(value) < 8:
             raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự.")
         return value
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "phone_number", "address", "date_of_birth", "password"]
+        extra_kwargs = {
+            "password": {"write_only": True, "required": False}
+        }
+
+    def validate_password(self, value):
+        if value and len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự.")
+        return value
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        if password:
+            instance.set_password(password)
+        return super().update(instance, validated_data)

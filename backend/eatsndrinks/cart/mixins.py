@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 class CustomPermissionMixin:
     def get_permissions(self):
         """
+        Set access level for each methods
         Đặt quyền truy cập cho từng phương thức.
         """
         if self.request.method == ['GET','POST', 'PUT', 'PATCH']:
