@@ -10,7 +10,8 @@ from .mixins import (
 from .models import Category, Product, ProductImage
 from .serializers import CategorySerializer, ProductSerializer, ProductImageSerializer
 from rest_framework.pagination import PageNumberPagination
-
+from rest_framework.decorators import action
+from rest_framework import status
 
 # Category ViewSet
 class CategoryViewSet(
@@ -19,6 +20,16 @@ class CategoryViewSet(
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     http_method_names = ["get", "post", "put", "patch"]
+    @action(detail=True, methods=["get"], url_path="products")
+    def get_products(self, request, pk=None):
+        """Fetch products belonging to a specific category."""
+        try:
+            category = self.get_object()
+            products = Product.objects.filter(category=category)
+            serializer = ProductSerializer(products, many=True, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Category.DoesNotExist:
+            return Response({"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ProductPageNumberPagination(PageNumberPagination):
