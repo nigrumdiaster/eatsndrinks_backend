@@ -49,15 +49,15 @@ class OrderDetail(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     unit_price = models.IntegerField(null=True, blank=True)
     quantity = models.IntegerField(default=1)
-    total_price = models.IntegerField(null=True, blank=True)
+    total_price = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = "Chi Tiết Đơn Hàng"
         verbose_name_plural = "Chi Tiết Đơn Hàng"
 
     def save(self, *args, **kwargs):
-        self.unit_price = self.product.unit_price
-        self.total_price = self.product.unit_price * self.quantity
+        self.unit_price = self.product.price
+        self.total_price = self.product.price * self.quantity
         super(OrderDetail, self).save(*args, **kwargs)
 
     def __str__(self):

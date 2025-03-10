@@ -95,6 +95,13 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
     pagination_class = ProductPageNumberPagination
     http_method_names = ["get", "post", "put", "patch"]
 
+    @action(detail=False, methods=["get"], url_path="random")
+    def get_random_products(self, request):
+        """Lấy 8 sản phẩm ngẫu nhiên"""
+        random_products = Product.objects.order_by("?")[:8]
+        serializer = self.get_serializer(random_products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # ProductImage ViewSet
 class ProductImageViewSet(

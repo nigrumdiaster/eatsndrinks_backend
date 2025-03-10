@@ -24,23 +24,23 @@ class OrderSerializer(serializers.ModelSerializer):
         if not cart_items.exists():
             raise serializers.ValidationError("Giỏ hàng của bạn đang trống!")
 
-        # Create the order
-        order = Order.objects.create(user=user, **validated_data)
-
+        # First, calculate the total price before creating the order
         total_price = 0
         for item in cart_items:
-            order_detail = OrderDetail.objects.create(
+            total_price += item.product.price * item.quantity
+
+        # Create the order with the calculated total_price
+        order = Order.objects.create(user=user, total_price=total_price, **validated_data)
+
+        # Create order details
+        for item in cart_items:
+            OrderDetail.objects.create(
                 order=order,
                 product=item.product,
-                unit_price=item.product.unit_price,
+                unit_price=item.product.price,
                 quantity=item.quantity,
-                total_price=item.product.unit_price * item.quantity
+                total_price=item.product.price * item.quantity
             )
-            total_price += order_detail.total_price
-
-        # Update total price
-        order.total_price = total_price
-        order.save()
 
         # Clear the user's cart after placing an order
         cart_items.delete()
