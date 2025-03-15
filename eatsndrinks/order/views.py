@@ -10,6 +10,17 @@ class OrderCreateView(generics.CreateAPIView):
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
 
+class UserOrderListView(generics.ListAPIView):
+    """
+    API trả về danh sách đơn hàng của người dùng hiện tại (GET /orders/)
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by("-created_at")  # Lấy đơn hàng của user, mới nhất trước
+
+
 class AdminOrderView(generics.ListAPIView):
     """
     Chỉ dùng để lấy danh sách đơn hàng (GET /admin/orders/)
