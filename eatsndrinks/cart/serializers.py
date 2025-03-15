@@ -17,3 +17,8 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ["id", "user", "items"]
         extra_kwargs = {"user": {"read_only": True}}  # User field is read-only
+
+class CartItemQuantitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ["quantity"]  # Chỉ lấy trường quantity

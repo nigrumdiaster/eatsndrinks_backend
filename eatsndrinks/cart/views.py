@@ -1,20 +1,54 @@
-from rest_framework.generics import RetrieveUpdateAPIView, DestroyAPIView, CreateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, DestroyAPIView, CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Cart, CartItem
-from .serializers import CartSerializer, CartItemSerializer
+from .serializers import CartSerializer, CartItemSerializer, CartItemQuantitySerializer
 from django.shortcuts import get_object_or_404
 from catalogue.models import Product
+from rest_framework.generics import RetrieveDestroyAPIView
+from rest_framework.permissions import IsAuthenticated
+from .models import Cart
+from .serializers import CartSerializer
 
-class UserCartView(RetrieveUpdateAPIView):
-    """Retrieve and update the user's cart."""
+class UserCartView(RetrieveDestroyAPIView):
+    """Retrieve and delete the user's cart (GET, DELETE only)."""
     permission_classes = [IsAuthenticated]
     serializer_class = CartSerializer
 
     def get_object(self):
         """Ensure each user can only access their own cart."""
         return Cart.objects.get(user=self.request.user)
+
+class UpdateCartItemQuantityView(UpdateAPIView):
+    """
+    API để cập nhật số lượng sản phẩm trong giỏ hàng (PATCH /cart/item/{pk}/update/)
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = CartItemQuantitySerializer
+    http_method_names = ["patch"]  # Chỉ cho phép PATCH
+
+    def patch(self, request, pk, *args, **kwargs):
+        try:
+            cart_item = CartItem.objects.get(pk=pk, cart__user=request.user)
+            new_quantity = request.data.get("quantity")
+
+            if new_quantity is None:
+                return Response({"error": "Bạn phải gửi số lượng mới."}, status=status.HTTP_400_BAD_REQUEST)
+
+            new_quantity = int(new_quantity)
+
+            if new_quantity < 1:
+                return Response({"error": "Số lượng phải ít nhất là 1."}, status=status.HTTP_400_BAD_REQUEST)
+
+            cart_item.quantity = new_quantity
+            cart_item.save()
+
+            return Response(CartItemQuantitySerializer(cart_item).data, status=status.HTTP_200_OK)
+
+        except CartItem.DoesNotExist:
+            return Response({"error": "Sản phẩm không tồn tại trong giỏ hàng."}, status=status.HTTP_404_NOT_FOUND)
+
 
 class RemoveCartItemView(DestroyAPIView):
     """Remove an item from the cart."""
