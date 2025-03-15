@@ -4,10 +4,10 @@ from catalogue.models import Product  # Import Product model
 
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')  # Display product name
-
+    product_mainimage = serializers.ImageField(source='product.mainimage', use_url=True)
     class Meta:
         model = CartItem
-        fields = ["id", "product", "product_name", "quantity"]
+        fields = ["id", "product", "product_name", "product_mainimage", "quantity"]
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(source='cartitem_set', many=True, read_only=True)
