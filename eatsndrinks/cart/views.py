@@ -53,7 +53,7 @@ class UpdateCartItemQuantityView(UpdateAPIView):
 class RemoveCartItemView(DestroyAPIView):
     """Remove an item from the cart."""
     permission_classes = [IsAuthenticated]
-
+    serializer_class = CartItemSerializer
     def delete(self, request, pk, *args, **kwargs):
         try:
             cart_item = CartItem.objects.get(pk=pk, cart__user=request.user)
