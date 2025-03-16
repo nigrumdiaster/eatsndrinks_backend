@@ -20,6 +20,12 @@ class UserCartView(RetrieveDestroyAPIView):
         """Ensure each user can only access their own cart."""
         return Cart.objects.get(user=self.request.user)
 
+    def delete(self, request, *args, **kwargs):
+        """Xóa toàn bộ sản phẩm trong giỏ hàng nhưng không xóa giỏ hàng."""
+        cart = self.get_object()
+        cart.cartitem_set.all().delete()  # ✅ Xóa tất cả sản phẩm trong giỏ hàng
+        return Response({"message": "Đã xóa toàn bộ sản phẩm trong giỏ hàng"}, status=status.HTTP_204_NO_CONTENT)
+
 class UpdateCartItemQuantityView(UpdateAPIView):
     """
     API để cập nhật số lượng sản phẩm trong giỏ hàng (PATCH /cart/item/{pk}/update/)
