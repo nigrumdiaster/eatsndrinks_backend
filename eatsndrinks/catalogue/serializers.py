@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["pk", "name", "description", "is_active"]
+        fields = ["id", "name", "description", "is_active"]
 
 # Product Image Serializer
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -37,11 +37,16 @@ class ProductImageSerializer(serializers.ModelSerializer):
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)  # Link images to product
+    category_name = serializers.CharField(source="category.name", read_only=True)  # Thêm category name
 
     class Meta:
         model = Product
-        fields = ["pk", "name", "description", "mainimage", "is_active", "quantity", "price", "category", "created_at", "updated_at", "images"]
-        read_only_fields = ["created_at", "updated_at"]
+        fields = [
+            "id", "name", "description", "mainimage", "is_active", 
+            "quantity", "price", "category", "category_name",  # Thêm category_name
+            "created_at", "updated_at", "images"
+        ]
+        read_only_fields = ["created_at", "updated_at", "category_name"]
 
     def validate_price(self, value):
         if value < 0:
