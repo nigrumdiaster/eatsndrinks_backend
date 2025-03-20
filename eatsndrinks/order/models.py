@@ -2,10 +2,10 @@ from django.db import models
 from catalogue.models import Product
 from users.models import User
 from django.core.validators import RegexValidator
+
 class Order(models.Model):
     STATUS_CHOICES = (
         ("cxl", 'Chưa Xử Lý'),
-        ("dxl", 'Đã Xử Lý'),
         ("dcbh", 'Đang Chuẩn Bị Hàng'),
         ("dgh", 'Đang Giao Hàng'),
         ("dghh", 'Đã Giao Hàng'),
@@ -13,9 +13,15 @@ class Order(models.Model):
         ("adh", 'Admin Hủy'),
         ("dtt", 'Đã thanh toán'),
     )
+    
     PAYMENT_METHOD_CHOICES = (
         ("cod", 'Thanh toán khi giao hàng'),
-        ("ppl", 'Thanh toán qua paypal')
+        ("ppl", 'Thanh toán qua PayPal')
+    )
+
+    PAYMENT_STATUS_CHOICES = (
+        ("pending", "Chờ thanh toán"),
+        ("paid", "Đã thanh toán"),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -34,15 +40,20 @@ class Order(models.Model):
     total_price = models.IntegerField()
     notes = models.CharField(max_length=150, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
-    payment_method = models.CharField(max_length=25, choices=PAYMENT_METHOD_CHOICES, default=PAYMENT_METHOD_CHOICES[0][0])
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default="cxl")
+    payment_method = models.CharField(max_length=25, choices=PAYMENT_METHOD_CHOICES, default="cod")
+    payment_status = models.CharField(max_length=25, choices=PAYMENT_STATUS_CHOICES, default="pending")  # ✅ Thêm trạng thái thanh toán
 
     class Meta:
         verbose_name = "Đơn Hàng"
         verbose_name_plural = "Đơn Hàng"
 
     def __str__(self):
-        return "Mã Đơn Hàng: " + str(self.id) + " - Khách Hàng: " + self.user.first_name + " " + self.user.last_name + " - Tổng Tiền: " + str(self.total_price) + " - Thời Gian: " + self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        return (
+            f"Mã Đơn Hàng: {self.id} - Khách Hàng: {self.user.first_name} {self.user.last_name} "
+            f"- Tổng Tiền: {self.total_price} - Trạng Thái Thanh Toán: {self.get_payment_status_display()} "
+            f"- Thời Gian: {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
 class OrderDetail(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
