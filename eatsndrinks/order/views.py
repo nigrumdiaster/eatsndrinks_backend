@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .models import Order
-from .serializers import AdminOrderSerializer, OrderSerializer
+from .models import Order, OrderDetail
+from .serializers import AdminOrderSerializer, OrderSerializer, OrderDetailSerializer
 from rest_framework.response import Response
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -9,6 +9,17 @@ class OrderCreateView(generics.CreateAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
+
+class OrderItemsView(generics.ListAPIView):
+    """
+    API lấy danh sách items của một đơn hàng theo order_id (GET /orders/{order_id}/items/)
+    """
+    permission_classes = [IsAuthenticated]  # Chỉ user đã đăng nhập mới truy cập
+    serializer_class = OrderDetailSerializer
+
+    def get_queryset(self):
+        order_id = self.kwargs.get("order_id")
+        return OrderDetail.objects.filter(order_id=order_id)  # Lọc items theo order_id
 
 class UserOrderListView(generics.ListAPIView):
     """
