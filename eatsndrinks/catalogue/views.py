@@ -102,7 +102,57 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
         serializer = self.get_serializer(random_products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="category",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="ID của danh mục sản phẩm cần lọc",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Số trang cần lấy",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Số lượng sản phẩm mỗi trang (mặc định: 10, tối đa: 100)",
+            ),
+        ]
+    )
+    @action(detail=False, methods=["get"], url_path="")
+    def get_products_by_category(self, request):
+        """Lấy danh sách sản phẩm theo category_id và hỗ trợ pagination"""
+        category_id = request.query_params.get("category")
 
+        if not category_id:
+            return Response(
+                {"detail": "Thiếu tham số category."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            products = Product.objects.filter(category_id=category_id).order_by("id")
+
+            # Áp dụng pagination
+            page = self.paginate_queryset(products)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(products, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValueError:
+            return Response(
+                {"detail": "Giá trị category không hợp lệ."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 # ProductImage ViewSet
 class ProductImageViewSet(
     CustomPermissionMixin, ProductImageSchemaMixin, viewsets.ModelViewSet

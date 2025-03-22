@@ -15,7 +15,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["id", "user", "phone_number", "address", "total_price", "status", "payment_method", "payment_status", "created_at", "items"]
-        extra_kwargs = {"user": {"read_only": True}, "total_price": {"read_only": True}, "status": {"read_only": True}}
+        extra_kwargs = {"user": {"read_only": True}, "total_price": {"read_only": True}, "status": {"read_only": True}, "payment_status": {"read_only": True}}
 
     def create(self, validated_data):
         user = self.context["request"].user  # Get the current user
@@ -46,3 +46,25 @@ class OrderSerializer(serializers.ModelSerializer):
         cart_items.delete()
 
         return order
+
+class AdminOrderSerializer(serializers.ModelSerializer):
+    items = OrderDetailSerializer(source="orderdetail_set", many=True, read_only=True)
+    
+    class Meta:
+        model = Order
+        fields = [
+            "id", "user", "phone_number", "address", "total_price", 
+            "status", "payment_method", "payment_status", "created_at", "items"
+        ]
+        extra_kwargs = {
+            "user": {"read_only": True},  # Admin không thay đổi user
+            "total_price": {"read_only": True},  # Không thay đổi tổng tiền
+            "created_at": {"read_only": True}  # Không thay đổi thời gian tạo
+        }
+
+    def update(self, instance, validated_data):
+        """Cho phép admin cập nhật trạng thái & thanh toán"""
+        instance.status = validated_data.get("status", instance.status)
+        instance.payment_status = validated_data.get("payment_status", instance.payment_status)
+        instance.save()
+        return instance
