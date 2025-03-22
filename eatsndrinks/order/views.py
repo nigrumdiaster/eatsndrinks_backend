@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Order, OrderDetail
 from .serializers import AdminOrderSerializer, OrderSerializer, OrderDetailSerializer
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderSerializer
@@ -32,6 +34,24 @@ class UserOrderDetailView(generics.RetrieveAPIView):
         # Chỉ lấy đơn hàng thuộc về user hiện tại
         return Order.objects.filter(user=self.request.user)
 
+class OrderPageNumberPagination(PageNumberPagination):
+    page_size = 10  # Default number of items per page
+    page_size_query_param = (
+        "page_size"  # Allow clients to set page size using this query parameter
+    )
+    max_page_size = 100  # Maximum number of items that can be requested per page
+
+    def get_paginated_response(self, data):
+        return Response(
+            {
+                "count": self.page.paginator.count,
+                "total_pages": self.page.paginator.num_pages,  # Add total pages here
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
+        )
+
 class AdminOrderView(generics.ListAPIView):
     """
     API để admin lấy danh sách đơn hàng (GET /admin/orders/)
@@ -39,6 +59,7 @@ class AdminOrderView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
     queryset = Order.objects.all().order_by("-created_at")  # Sắp xếp theo thời gian tạo
     serializer_class = AdminOrderSerializer
+    pagination_class = OrderPageNumberPagination
 
 class AdminOrderDetailView(generics.RetrieveUpdateAPIView):
     """
