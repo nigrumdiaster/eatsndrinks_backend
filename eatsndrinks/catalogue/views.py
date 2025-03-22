@@ -108,7 +108,7 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
                 name="category",
                 type=int,
                 location=OpenApiParameter.QUERY,
-                required=True,
+                required=False,
                 description="ID của danh mục sản phẩm cần lọc",
             ),
             OpenApiParameter(
@@ -127,32 +127,25 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
             ),
         ]
     )
-    @action(detail=False, methods=["get"], url_path="")
-    def get_products_by_category(self, request):
-        """Lấy danh sách sản phẩm theo category_id và hỗ trợ pagination"""
+    def list(self, request, *args, **kwargs):
+        """Lấy danh sách sản phẩm (có thể lọc theo category) và hỗ trợ pagination"""
         category_id = request.query_params.get("category")
 
-        if not category_id:
-            return Response(
-                {"detail": "Thiếu tham số category."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
+        if category_id:
             products = Product.objects.filter(category_id=category_id).order_by("id")
+        else:
+            products = Product.objects.all().order_by("id")
 
-            # Áp dụng pagination
-            page = self.paginate_queryset(products)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
+        # Áp dụng pagination
+        page = self.paginate_queryset(products)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-            serializer = self.get_serializer(products, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except ValueError:
-            return Response(
-                {"detail": "Giá trị category không hợp lệ."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = self.get_serializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # ProductImage ViewSet
 class ProductImageViewSet(
     CustomPermissionMixin, ProductImageSchemaMixin, viewsets.ModelViewSet
