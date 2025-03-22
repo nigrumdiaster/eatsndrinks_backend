@@ -112,6 +112,13 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
                 description="ID của danh mục sản phẩm cần lọc",
             ),
             OpenApiParameter(
+                name="search",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Tìm kiếm sản phẩm theo tên",
+            ),
+            OpenApiParameter(
                 name="page",
                 type=int,
                 location=OpenApiParameter.QUERY,
@@ -128,13 +135,17 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
         ]
     )
     def list(self, request, *args, **kwargs):
-        """Lấy danh sách sản phẩm (có thể lọc theo category) và hỗ trợ pagination"""
+        """Lấy danh sách sản phẩm (lọc theo category, tìm kiếm theo tên, hỗ trợ pagination)"""
         category_id = request.query_params.get("category")
+        search_query = request.query_params.get("search")
+
+        products = Product.objects.all().order_by("id")
 
         if category_id:
-            products = Product.objects.filter(category_id=category_id).order_by("id")
-        else:
-            products = Product.objects.all().order_by("id")
+            products = products.filter(category_id=category_id)
+
+        if search_query:
+            products = products.filter(name__icontains=search_query)  # Tìm kiếm không phân biệt hoa thường
 
         # Áp dụng pagination
         page = self.paginate_queryset(products)
@@ -144,6 +155,7 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
 
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 # ProductImage ViewSet
