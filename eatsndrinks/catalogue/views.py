@@ -20,7 +20,7 @@ from django.core.paginator import Paginator, EmptyPage
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, viewsets
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
 class CategoryViewSet(
@@ -92,7 +92,7 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
     queryset = Product.objects.all()  # ✅ Thêm queryset ở đây
     serializer_class = ProductSerializer
     pagination_class = ProductPageNumberPagination
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (JSONParser ,MultiPartParser, FormParser)
     http_method_names = ["get", "post", "put", "patch"]
 
     def get_queryset(self):
