@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Category, Product, ProductImage
 from django.core.exceptions import ValidationError
+from .models import Category, Product, ProductImage
+
 
 # Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
@@ -8,11 +9,12 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ["id", "name", "description", "is_active"]
 
+
 # Product Image Serializer
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'product']  # Add 'product' field if needed
+        fields = ["id", "image", "product"]
 
     def validate_image(self, value):
         # Allowed extensions
@@ -29,22 +31,21 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
         return value
 
-    def validate(self, data):
-        if not data.get('product') and data.get('image'):
-            raise serializers.ValidationError("Phải cung cấp sản phẩm khi gửi hình ảnh.")
-        return data
 
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)  # Link images to product
-    category_name = serializers.CharField(source="category.name", read_only=True)  # Thêm category name
+    images = ProductImageSerializer(many=True, read_only=True)  
+    uploaded_images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )  # Cho phép upload nhiều ảnh cùng lúc
+    category_name = serializers.CharField(source="category.name", read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "description", "mainimage", "is_active", 
-            "quantity", "price", "category", "category_name",  # Thêm category_name
-            "created_at", "updated_at", "images"
+            "id", "name", "description", "mainimage", "is_active",
+            "quantity", "price", "category", "category_name",  
+            "created_at", "updated_at", "images", "uploaded_images"  # Thêm uploaded_images
         ]
         read_only_fields = ["created_at", "updated_at", "category_name"]
 
@@ -52,9 +53,29 @@ class ProductSerializer(serializers.ModelSerializer):
         if value < 0:
             raise serializers.ValidationError("Giá không thể âm.")
         return value
-    
+
+    def create(self, validated_data):
+        uploaded_images = validated_data.pop("uploaded_images", [])  # Lấy danh sách ảnh tải lên
+        product = Product.objects.create(**validated_data)  # Tạo sản phẩm mới
+
+        # Lưu ảnh vào ProductImage
+        for image in uploaded_images:
+            ProductImage.objects.create(product=product, image=image)
+
+        return product
+
     def update(self, instance, validated_data):
         # Loại bỏ các trường read-only trước khi cập nhật
         validated_data.pop('created_at', None)
         validated_data.pop('updated_at', None)
-        return super().update(instance, validated_data)
+
+        uploaded_images = validated_data.pop("uploaded_images", [])  # Lấy danh sách ảnh mới (nếu có)
+        
+        instance = super().update(instance, validated_data)  # Cập nhật sản phẩm
+
+        # Nếu có ảnh mới, thêm vào product
+        if uploaded_images:
+            for image in uploaded_images:
+                ProductImage.objects.create(product=instance, image=image)
+
+        return instance

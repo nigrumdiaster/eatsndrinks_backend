@@ -11,7 +11,6 @@ class Order(models.Model):
         ("dghh", 'Đã Giao Hàng'),
         ("khh", 'Khách Hàng Hủy'),
         ("adh", 'Admin Hủy'),
-        ("dtt", 'Đã thanh toán'),
     )
     
     PAYMENT_METHOD_CHOICES = (

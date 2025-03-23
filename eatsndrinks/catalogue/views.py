@@ -20,35 +20,34 @@ from django.core.paginator import Paginator, EmptyPage
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, viewsets
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class CategoryViewSet(
     CustomPermissionMixin, CategorySchemaMixin, viewsets.ModelViewSet
 ):
-    queryset = Category.objects.all()
+    queryset = Category.objects.all()  # ✅ Thêm queryset
     serializer_class = CategorySerializer
     http_method_names = ["get", "post", "put", "patch"]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="limit",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                description="Number of products to return (optional)",
-            )
-        ]
-    )
+    def get_queryset(self):
+        """Chỉ hiển thị danh mục is_active=True nếu người dùng không phải admin"""
+        queryset = Category.objects.all()
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+        return queryset
+
     @action(detail=True, methods=["get"], url_path="products")
     def get_products(self, request, pk=None):
-        """Fetch products belonging to a specific category with an optional limit."""
+        """Chỉ trả về sản phẩm is_active=True thuộc category nếu là user thường"""
         try:
             category = self.get_object()
             products = Product.objects.filter(category=category)
 
-            # Get 'limit' query param, default to None (no limit)
-            limit = request.query_params.get("limit")
+            if not request.user.is_staff:
+                products = products.filter(is_active=True)  # ✅ Lọc sản phẩm active
 
+            limit = request.query_params.get("limit")
             if limit is not None:
                 try:
                     limit = int(limit)
@@ -90,16 +89,24 @@ class ProductPageNumberPagination(PageNumberPagination):
 
 # Product ViewSet
 class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelViewSet):
-    queryset = Product.objects.all()
+    queryset = Product.objects.all()  # ✅ Thêm queryset ở đây
     serializer_class = ProductSerializer
     pagination_class = ProductPageNumberPagination
+    parser_classes = (MultiPartParser, FormParser)
     http_method_names = ["get", "post", "put", "patch"]
+
+    def get_queryset(self):
+        """Lọc sản phẩm dựa vào quyền của người dùng"""
+        queryset = Product.objects.all().order_by("id")
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+        return queryset
 
     @action(detail=False, methods=["get"], url_path="random")
     def get_random_products(self, request):
-        """Lấy 8 sản phẩm ngẫu nhiên"""
-        random_products = Product.objects.order_by("?")[:8]
-        serializer = self.get_serializer(random_products, many=True)
+        """Lấy 8 sản phẩm ngẫu nhiên (chỉ lấy sản phẩm đang hoạt động nếu không phải admin)"""
+        queryset = self.get_queryset().order_by("?")[:8]
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -123,7 +130,7 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
                 type=int,
                 location=OpenApiParameter.QUERY,
                 required=False,
-                description="Số trang cần lấy",
+                description="Chỉ số trang cần lấy",
             ),
             OpenApiParameter(
                 name="page_size",
@@ -139,23 +146,24 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
         category_id = request.query_params.get("category")
         search_query = request.query_params.get("search")
 
-        products = Product.objects.all().order_by("id")
+        queryset = self.get_queryset()  # Lọc dữ liệu dựa trên quyền truy cập
 
         if category_id:
-            products = products.filter(category_id=category_id)
+            queryset = queryset.filter(category_id=category_id)
 
         if search_query:
-            products = products.filter(name__icontains=search_query)  # Tìm kiếm không phân biệt hoa thường
+            queryset = queryset.filter(
+                name__icontains=search_query
+            )  # Tìm kiếm không phân biệt hoa thường
 
         # Áp dụng pagination
-        page = self.paginate_queryset(products)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(products, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 # ProductImage ViewSet
