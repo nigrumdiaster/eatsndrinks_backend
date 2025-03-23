@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LoginView, TokenRefreshView, AdminUserDetailView,AdminUserListView, UserDetailView
+from .views import RegisterView, LoginView, TokenRefreshView, AdminUserDetailView,AdminUserListView, UserDetailView, IsAdminView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('admin/user/<int:id>/', AdminUserDetailView.as_view(), name='admin-user-detail'),  # GET, PUT, PATCH
     # User: Manage own profile
     path('user/profile/', UserDetailView.as_view(), name='user-profile'),
+    path("is-admin/", IsAdminView.as_view(), name="is-admin"),
 ]

@@ -121,7 +121,11 @@ class LoginView(APIView):
             'access': str(refresh.access_token),
         }, status=status.HTTP_200_OK)
     
+class IsAdminView(APIView):
+    permission_classes = [IsAuthenticated]  # Chỉ cho phép user đã đăng nhập truy cập
 
+    def get(self, request):
+        return Response({"is_admin": request.user.is_staff})
 
 # Admin: List all users (GET only)
 class AdminUserListView(ListAPIView):
