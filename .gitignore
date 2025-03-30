@@ -3,3 +3,4 @@ env/
 **/env/
 eatsndrinks/db.sqlite3
 note.txt
+eatsndrinks/.env
