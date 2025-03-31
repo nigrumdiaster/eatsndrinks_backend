@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from .models import Contact
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 # Create your views here.
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all().order_by('-created_at')
@@ -24,7 +25,28 @@ class ContactViewSet(viewsets.ModelViewSet):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ReplyToContactView(APIView):
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser]
+
+
+    @extend_schema(
+        summary="Reply to a contact message",
+        description="Send an email reply to a contact message",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "integer", "example": 1},
+                    "subject": {"type": "string", "example": "Thank you for reaching out"},
+                    "message": {"type": "string", "example": "<h3>Hello!</h3><p>Thank you for reaching out to us.</p>"}
+                },
+                "required": ["contact_id", "subject", "message"]
+            }
+        },
+        responses={
+            200: {"description": "Reply sent successfully", "content": {"application/json": {"example": {"success": "Reply sent successfully!"}}}},
+            404: {"description": "Message not found", "content": {"application/json": {"example": {"error": "Message not found"}}}}
+        },
+    )
     def post(self, request, *args, **kwargs):
         contact_id = request.data.get("contact_id")
         subject = request.data.get("subject")
