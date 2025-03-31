@@ -6,7 +6,7 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = '__all__'
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'is_replied', 'is_active']
 
     # def update(self, instance, validated_data):
     #     # Allow only 'is_replied' to be updated
