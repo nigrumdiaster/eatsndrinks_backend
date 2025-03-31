@@ -1,12 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ContactViewSet, reply_to_contact
+from .views import ContactViewSet, ReplyToContactView
 
 router = DefaultRouter()
-router.register(r'', ContactViewSet)
+router.register(r'contacts', ContactViewSet)
 
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('reply/', reply_to_contact, name='reply_to_contact'),
+    path('reply/', ReplyToContactView.as_view(), name='reply_to_contact'),
 ]
