@@ -8,5 +8,5 @@ router.register(r'', ContactViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('/reply/', reply_to_contact, name='reply_to_contact'),
+    path('reply/', reply_to_contact, name='reply_to_contact'),
 ]
