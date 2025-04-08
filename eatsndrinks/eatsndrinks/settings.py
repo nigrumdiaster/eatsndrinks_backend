@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "content",
     "catalogue",
     "order",
+    "payments",
     "restaurants",
     "reviews",
     "search",
