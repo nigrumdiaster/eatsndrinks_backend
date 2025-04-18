@@ -21,7 +21,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-
+from django.utils import timezone
 
 class CategoryViewSet(
     CustomPermissionMixin, CategorySchemaMixin, viewsets.ModelViewSet
@@ -89,10 +89,10 @@ class ProductPageNumberPagination(PageNumberPagination):
 
 # Product ViewSet
 class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelViewSet):
-    queryset = Product.objects.all()  # ✅ Thêm queryset ở đây
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
     pagination_class = ProductPageNumberPagination
-    parser_classes = (JSONParser ,MultiPartParser, FormParser)
+    parser_classes = (JSONParser, MultiPartParser, FormParser)
     http_method_names = ["get", "post", "put", "patch"]
 
     def get_queryset(self):
@@ -104,59 +104,82 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
 
     @action(detail=False, methods=["get"], url_path="random")
     def get_random_products(self, request):
-        """Lấy 8 sản phẩm ngẫu nhiên (chỉ lấy sản phẩm đang hoạt động nếu không phải admin)"""
+        """Lấy 8 sản phẩm ngẫu nhiên"""
         queryset = self.get_queryset().order_by("?")[:8]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get"], url_path="flash-sale")
+    def get_flash_sale_products(self, request):
+        """Lấy danh sách sản phẩm đang flash sale"""
+        now = timezone.now()
+        queryset = self.get_queryset().filter(
+            flash_sale_start__lte=now,
+            flash_sale_end__gte=now,
+            flash_sale_price__isnull=False,
+        )
+
+        limit = request.query_params.get("limit")
+        if limit is not None:
+            try:
+                limit = int(limit)
+                queryset = queryset[:limit]
+            except ValueError:
+                return Response(
+                    {"detail": "Giá trị 'limit' không hợp lệ."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="set-flash-sale")
+    def set_flash_sale(self, request, pk=None):
+        """Gán thông tin flash sale cho sản phẩm"""
+        product = self.get_object()
+        flash_sale_price = request.data.get("flash_sale_price")
+        flash_sale_start = request.data.get("flash_sale_start")
+        flash_sale_end = request.data.get("flash_sale_end")
+
+        if not (flash_sale_price and flash_sale_start and flash_sale_end):
+            return Response(
+                {"detail": "Cần truyền đầy đủ: flash_sale_price, flash_sale_start, flash_sale_end."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            product.flash_sale_price = flash_sale_price
+            product.flash_sale_start = flash_sale_start
+            product.flash_sale_end = flash_sale_end
+            product.save()
+            return Response({"detail": "Cập nhật flash sale thành công."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     @extend_schema(
         parameters=[
-            OpenApiParameter(
-                name="category",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=False,
-                description="ID của danh mục sản phẩm cần lọc",
-            ),
-            OpenApiParameter(
-                name="search",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=False,
-                description="Tìm kiếm sản phẩm theo tên",
-            ),
-            OpenApiParameter(
-                name="page",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=False,
-                description="Chỉ số trang cần lấy",
-            ),
-            OpenApiParameter(
-                name="page_size",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=False,
-                description="Số lượng sản phẩm mỗi trang (mặc định: 10, tối đa: 100)",
-            ),
+            OpenApiParameter(name="category", type=int, location=OpenApiParameter.QUERY, required=False, description="ID danh mục"),
+            OpenApiParameter(name="search", type=str, location=OpenApiParameter.QUERY, required=False, description="Tìm kiếm theo tên"),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="page_size", type=int, location=OpenApiParameter.QUERY, required=False),
         ]
     )
     def list(self, request, *args, **kwargs):
-        """Lấy danh sách sản phẩm (lọc theo category, tìm kiếm theo tên, hỗ trợ pagination)"""
+        """Lọc theo category, tìm kiếm theo tên, phân trang"""
         category_id = request.query_params.get("category")
         search_query = request.query_params.get("search")
-
-        queryset = self.get_queryset()  # Lọc dữ liệu dựa trên quyền truy cập
+        queryset = self.get_queryset()
 
         if category_id:
             queryset = queryset.filter(category_id=category_id)
-
         if search_query:
-            queryset = queryset.filter(
-                name__icontains=search_query
-            )  # Tìm kiếm không phân biệt hoa thường
+            queryset = queryset.filter(name__icontains=search_query)
 
-        # Áp dụng pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)

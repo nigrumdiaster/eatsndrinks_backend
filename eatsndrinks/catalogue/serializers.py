@@ -34,21 +34,25 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)  
-    uploaded_images = serializers.ListField(
-        child=serializers.ImageField(), write_only=True, required=False
-    )  # Cho phép upload nhiều ảnh cùng lúc
-    category_name = serializers.CharField(source="category.name", read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
+    is_flash_sale_active = serializers.SerializerMethodField()
+    current_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "description", "mainimage", "is_active",
-            "quantity", "price", "category", "category_name",  
-            "created_at", "updated_at", "images", "uploaded_images"  # Thêm uploaded_images
+            'id', 'name', 'description', 'mainimage', 'price', 'flash_sale_price',
+            'flash_sale_start', 'flash_sale_end', 'quantity', 'category',
+            'is_active', 'created_at', 'updated_at',
+            'images', 'is_flash_sale_active', 'current_price'
         ]
-        read_only_fields = ["created_at", "updated_at", "category_name"]
 
+    def get_is_flash_sale_active(self, obj):
+        return obj.is_flash_sale_active()
+
+    def get_current_price(self, obj):
+        return obj.current_price()
+    
     def validate_price(self, value):
         if value < 0:
             raise serializers.ValidationError("Giá không thể âm.")

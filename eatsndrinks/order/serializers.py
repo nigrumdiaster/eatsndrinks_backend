@@ -6,14 +6,13 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source="product.name")
     product_image = serializers.ImageField(source="product.mainimage", read_only=True)
 
-
     class Meta:
         model = OrderDetail
         fields = ["product", "product_name", "product_image", "unit_price", "quantity", "total_price"]
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderDetailSerializer(source="orderdetail_set", many=True, read_only=True)
-    
+
     class Meta:
         model = Order
         fields = ["id", "user", "phone_number", "address", "total_price", "status", "payment_method", "payment_status", "created_at", "items"]
@@ -29,19 +28,32 @@ class OrderSerializer(serializers.ModelSerializer):
         # First, calculate the total price before creating the order
         total_price = 0
         for item in cart_items:
-            total_price += item.product.price * item.quantity
+            # Lấy giá đúng của sản phẩm theo flash sale nếu có
+            if item.product.is_flash_sale_active() and item.product.flash_sale_price:
+                unit_price = item.product.flash_sale_price
+            else:
+                unit_price = item.product.price
+
+            total_price += unit_price * item.quantity
 
         # Create the order with the calculated total_price
         order = Order.objects.create(user=user, total_price=total_price, **validated_data)
 
         # Create order details
         for item in cart_items:
+            # Lấy giá đúng của sản phẩm theo flash sale nếu có
+            if item.product.is_flash_sale_active() and item.product.flash_sale_price:
+                unit_price = item.product.flash_sale_price
+            else:
+                unit_price = item.product.price
+
+            # Create order detail with correct unit price and total price
             OrderDetail.objects.create(
                 order=order,
                 product=item.product,
-                unit_price=item.product.price,
+                unit_price=unit_price,
                 quantity=item.quantity,
-                total_price=item.product.price * item.quantity
+                total_price=unit_price * item.quantity
             )
 
         # Clear the user's cart after placing an order
