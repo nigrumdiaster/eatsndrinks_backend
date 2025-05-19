@@ -20,7 +20,6 @@ class Product(models.Model):
     flash_sale_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     flash_sale_start = models.DateTimeField(null=True, blank=True)
     flash_sale_end = models.DateTimeField(null=True, blank=True)
-    quantity = models.IntegerField(default=0)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, related_name="products", null=True, blank=True
     )

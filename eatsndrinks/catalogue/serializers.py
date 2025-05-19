@@ -42,7 +42,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'description', 'mainimage', 'price', 'flash_sale_price',
-            'flash_sale_start', 'flash_sale_end', 'quantity', 'category',
+            'flash_sale_start', 'flash_sale_end', 'category',
             'is_active', 'created_at', 'updated_at',
             'images', 'is_flash_sale_active', 'current_price'
         ]
