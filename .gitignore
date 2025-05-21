@@ -3,3 +3,4 @@ env/
 **/env/
 note.txt
 eatsndrinks/.env
+eatsndrinks/data.json
