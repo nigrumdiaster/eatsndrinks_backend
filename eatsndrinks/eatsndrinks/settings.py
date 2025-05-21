@@ -94,20 +94,28 @@ WSGI_APPLICATION = "eatsndrinks.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {  
-        'ENGINE': 'django.db.backends.mysql',  
-        'NAME': 'eatsndrinks',  
-        'USER': 'root',  
-        'PASSWORD': '123456',  
-        'HOST': '127.0.0.1',  
-        'PORT': '3306',  
-        'TIME_ZONE': 'Asia/Saigon',
-        'OPTIONS': {  
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"  
+# DATABASES = {
+#     'default': {  
+#         'ENGINE': 'django.db.backends.mysql',  
+#         'NAME': 'eatsndrinks',  
+#         'USER': 'root',  
+#         'PASSWORD': '123456',  
+#         'HOST': '127.0.0.1',  
+#         'PORT': '3306',  
+#         'TIME_ZONE': 'Asia/Saigon',
+#         'OPTIONS': {  
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"  
         
-        }  
-    }  
+#         }  
+#     }  
+# }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'TIME_ZONE': 'Asia/Saigon',
+        'NAME': BASE_DIR / "db.sqlite3",  # Tên file SQLite bạn muốn tạo
+    }
 }
 
 
