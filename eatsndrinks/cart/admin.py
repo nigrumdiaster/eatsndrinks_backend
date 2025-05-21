@@ -3,7 +3,7 @@ from .models import Cart, CartItem
 
 # Register Cart
 class CartAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user')  # Fields to display in the list view
+    list_display = ('id', 'user', 'user__username')  # Fields to display in the list view
     search_fields = ('user__username', 'user__email')  # Allow search by username or email
     list_filter = ('user',)  # Add a filter sidebar for users
 

@@ -19,7 +19,6 @@ class User(AbstractUser):
         ]
     )
     address = models.TextField(blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
 
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
