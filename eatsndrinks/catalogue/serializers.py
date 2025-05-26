@@ -19,9 +19,11 @@ class ProductImageSerializer(serializers.ModelSerializer):
     def validate_image(self, value):
         # Allowed extensions
         valid_extensions = (".png", ".jpg", ".jpeg")
-        
+
         # Check file extension
-        if not hasattr(value, "name") or not value.name.lower().endswith(valid_extensions):
+        if not hasattr(value, "name") or not value.name.lower().endswith(
+            valid_extensions
+        ):
             raise ValidationError("Chỉ hỗ trợ các định dạng hình ảnh PNG, JPG, JPEG.")
 
         # Check file size (max 5MB)
@@ -37,14 +39,29 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     is_flash_sale_active = serializers.SerializerMethodField()
     current_price = serializers.SerializerMethodField()
+    uploaded_images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'description', 'mainimage', 'price', 'flash_sale_price',
-            'flash_sale_start', 'flash_sale_end', 'category',
-            'is_active', 'created_at', 'updated_at',
-            'images', 'is_flash_sale_active', 'current_price'
+            "id",
+            "name",
+            "description",
+            "mainimage",
+            "price",
+            "flash_sale_price",
+            "flash_sale_start",
+            "flash_sale_end",
+            "category",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "images",
+            "is_flash_sale_active",
+            "current_price",
+            'uploaded_images'
         ]
 
     def get_is_flash_sale_active(self, obj):
@@ -52,14 +69,16 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_current_price(self, obj):
         return obj.current_price()
-    
+
     def validate_price(self, value):
         if value < 0:
             raise serializers.ValidationError("Giá không thể âm.")
         return value
 
     def create(self, validated_data):
-        uploaded_images = validated_data.pop("uploaded_images", [])  # Lấy danh sách ảnh tải lên
+        uploaded_images = validated_data.pop(
+            "uploaded_images", []
+        )  # Lấy danh sách ảnh tải lên
         product = Product.objects.create(**validated_data)  # Tạo sản phẩm mới
 
         # Lưu ảnh vào ProductImage
@@ -70,11 +89,13 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # Loại bỏ các trường read-only trước khi cập nhật
-        validated_data.pop('created_at', None)
-        validated_data.pop('updated_at', None)
+        validated_data.pop("created_at", None)
+        validated_data.pop("updated_at", None)
 
-        uploaded_images = validated_data.pop("uploaded_images", [])  # Lấy danh sách ảnh mới (nếu có)
-        
+        uploaded_images = validated_data.pop(
+            "uploaded_images", []
+        )  # Lấy danh sách ảnh mới (nếu có)
+
         instance = super().update(instance, validated_data)  # Cập nhật sản phẩm
 
         # Nếu có ảnh mới, thêm vào product
