@@ -61,7 +61,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "images",
             "is_flash_sale_active",
             "current_price",
-            'uploaded_images'
+            "uploaded_images",
         ]
 
     def get_is_flash_sale_active(self, obj):
@@ -92,14 +92,16 @@ class ProductSerializer(serializers.ModelSerializer):
         validated_data.pop("created_at", None)
         validated_data.pop("updated_at", None)
 
-        uploaded_images = validated_data.pop(
-            "uploaded_images", []
-        )  # Lấy danh sách ảnh mới (nếu có)
+        uploaded_images = validated_data.pop("uploaded_images", [])
 
-        instance = super().update(instance, validated_data)  # Cập nhật sản phẩm
+        # Cập nhật các trường còn lại của sản phẩm
+        instance = super().update(instance, validated_data)
 
-        # Nếu có ảnh mới, thêm vào product
         if uploaded_images:
+            # 🔥 XÓA TẤT CẢ ẢNH CŨ
+            instance.images.all().delete()
+
+            # 📤 THÊM ẢNH MỚI
             for image in uploaded_images:
                 ProductImage.objects.create(product=instance, image=image)
 
