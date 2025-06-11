@@ -1,9 +1,12 @@
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Order, OrderDetail
-from .serializers import AdminOrderSerializer, OrderSerializer, OrderDetailSerializer
+from .serializers import AdminOrderSerializer, OrderSerializer, OrderDetailSerializer, RecentCustomerSerializer
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.views import APIView
+from django.utils.timezone import now
+from django.db.models import Sum
 
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -106,5 +109,90 @@ class AdminOrderDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = AdminOrderSerializer
     lookup_field = "id"
     http_method_names = ["get", "post", "put", "patch"]
+
+class RecentPaidCustomersView(APIView):
+    """
+    API để lấy thông tin 5 khách hàng gần đây đã thanh toán
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        # Lấy danh sách 5 đơn hàng đã thanh toán gần đây
+        recent_orders = Order.objects.filter(payment_status="paid").order_by("-created_at")[:5]
+        
+        # Serialize dữ liệu
+        serializer = RecentCustomerSerializer(recent_orders, many=True)
+        return Response(serializer.data, status=200)
+
+class MonthlySalesView(APIView):
+    """
+    API để trả về số lượng sản phẩm đã bán trong tháng này
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        # Lấy ngày đầu tiên và ngày cuối cùng của tháng hiện tại
+        today = now()
+        start_of_month = today.replace(day=1)
+        end_of_month = today.replace(day=1).replace(month=today.month + 1) if today.month < 12 else today.replace(day=1, month=1, year=today.year + 1)
+
+        # Lọc các đơn hàng đã thanh toán trong tháng này
+        orders = Order.objects.filter(
+            payment_status="paid",
+            created_at__gte=start_of_month,
+            created_at__lt=end_of_month
+        )
+
+        # Tính tổng số lượng sản phẩm đã bán
+        total_quantity = orders.aggregate(total=Sum('orderdetail__quantity'))['total'] or 0
+
+        return Response({"total_quantity": total_quantity}, status=200)
+
+class MonthlyRevenueView(APIView):
+    """
+    API để trả về tổng doanh thu tháng này và phần trăm tăng/giảm so với tháng trước
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        # Lấy ngày đầu tiên và ngày cuối cùng của tháng hiện tại
+        today = now()
+        start_of_this_month = today.replace(day=1)
+        if today.month < 12:
+            start_of_next_month = today.replace(day=1, month=today.month + 1)
+        else:
+            start_of_next_month = today.replace(day=1, month=1, year=today.year + 1)
+
+        # Lấy ngày đầu tiên và ngày cuối cùng của tháng trước
+        if today.month > 1:
+            start_of_last_month = today.replace(day=1, month=today.month - 1)
+        else:
+            start_of_last_month = today.replace(day=1, month=12, year=today.year - 1)
+
+        # Tổng doanh thu tháng này
+        revenue_this_month = Order.objects.filter(
+            payment_status="paid",
+            created_at__gte=start_of_this_month,
+            created_at__lt=start_of_next_month
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+
+        # Tổng doanh thu tháng trước
+        revenue_last_month = Order.objects.filter(
+            payment_status="paid",
+            created_at__gte=start_of_last_month,
+            created_at__lt=start_of_this_month
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+
+        # Tính phần trăm tăng/giảm
+        if revenue_last_month > 0:
+            percentage_change = ((revenue_this_month - revenue_last_month) / revenue_last_month) * 100
+        else:
+            percentage_change = None  # Không thể tính phần trăm nếu tháng trước không có doanh thu
+
+        return Response({
+            "revenue_this_month": revenue_this_month,
+            "revenue_last_month": revenue_last_month,
+            "percentage_change": percentage_change
+        }, status=200)
 
 

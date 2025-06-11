@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import OrderCreateView, AdminOrderView, AdminOrderDetailView, UserOrderListView, UserOrderDetailView
+from .views import OrderCreateView, AdminOrderView, AdminOrderDetailView, UserOrderListView, UserOrderDetailView, RecentPaidCustomersView, MonthlySalesView, MonthlyRevenueView
 
 urlpatterns = [
     path("", UserOrderListView.as_view(), name="user-orders"),
@@ -7,4 +7,7 @@ urlpatterns = [
     path("admin/orders/", AdminOrderView.as_view(), name="admin-order-list"),  # GET danh sách
     path("admin/order/<int:id>/", AdminOrderDetailView.as_view(), name="admin-order-detail"),  # GET, PUT, PATCH, DELETE
     path("<int:id>/", UserOrderDetailView.as_view(), name="user-order-detail"),
+    path('admin/recent-paid-customers/', RecentPaidCustomersView.as_view(), name='recent-paid-customers'),
+    path('admin/monthly-sales/', MonthlySalesView.as_view(), name='monthly-sales'),
+    path('admin/monthly-revenue/', MonthlyRevenueView.as_view(), name='monthly-revenue'),
 ]

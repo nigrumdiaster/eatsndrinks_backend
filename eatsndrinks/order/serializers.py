@@ -63,11 +63,12 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class AdminOrderSerializer(serializers.ModelSerializer):
     items = OrderDetailSerializer(source="orderdetail_set", many=True, read_only=True)
-    
+    full_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Order
         fields = [
-            "id", "user", "phone_number", "address", "total_price", 
+            "id", "user", "full_name", "phone_number", "address", "total_price", 
             "status", "payment_method", "payment_status", "created_at", "items"
         ]
         extra_kwargs = {
@@ -76,9 +77,25 @@ class AdminOrderSerializer(serializers.ModelSerializer):
             "created_at": {"read_only": True}  # Không thay đổi thời gian tạo
         }
 
+    def get_full_name(self, obj):
+        # Lấy họ và tên từ user
+        return f"{obj.user.first_name} {obj.user.last_name}"
+
     def update(self, instance, validated_data):
         """Cho phép admin cập nhật trạng thái & thanh toán"""
         instance.status = validated_data.get("status", instance.status)
         instance.payment_status = validated_data.get("payment_status", instance.payment_status)
         instance.save()
         return instance
+
+class RecentCustomerSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    customer_phone = serializers.CharField(source="user.phone_number", read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ["customer_name", "customer_phone", "total_price"]
+
+    def get_customer_name(self, obj):
+        # Lấy tên đầy đủ từ first_name và last_name
+        return f"{obj.user.first_name} {obj.user.last_name}"
