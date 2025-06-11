@@ -61,6 +61,41 @@ class AdminOrderView(generics.ListAPIView):
     serializer_class = AdminOrderSerializer
     pagination_class = OrderPageNumberPagination
 
+    def filter_queryset(self, queryset):
+        """
+        Thêm chức năng tìm kiếm và lọc theo trạng thái, phương thức thanh toán, trạng thái thanh toán
+        """
+        # Lọc theo mã đơn hàng hoặc tên người dùng
+        search_query = self.request.query_params.get("search", None)
+        if search_query:
+            queryset = queryset.filter(
+                id__icontains=search_query
+            )
+
+        # Lọc theo trạng thái đơn hàng
+        status = self.request.query_params.get("status", None)
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Lọc theo phương thức thanh toán
+        payment_method = self.request.query_params.get("payment_method", None)
+        if payment_method:
+            queryset = queryset.filter(payment_method=payment_method)
+
+        # Lọc theo trạng thái thanh toán
+        payment_status = self.request.query_params.get("payment_status", None)
+        if payment_status:
+            queryset = queryset.filter(payment_status=payment_status)
+
+        return queryset
+
+    def get_queryset(self):
+        """
+        Gọi filter_queryset để áp dụng tìm kiếm và lọc
+        """
+        queryset = super().get_queryset()
+        return self.filter_queryset(queryset)
+
 class AdminOrderDetailView(generics.RetrieveUpdateAPIView):
     """
     API để admin xem & cập nhật đơn hàng theo ID (GET, PUT, PATCH)
