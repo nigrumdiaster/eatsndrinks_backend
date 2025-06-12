@@ -126,15 +126,18 @@ class RecentPaidCustomersView(APIView):
 
 class MonthlySalesView(APIView):
     """
-    API để trả về số lượng sản phẩm đã bán trong tháng này
+    API để trả về số lượng đơn hàng đã thanh toán trong tháng này
     """
     permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
-        # Lấy ngày đầu tiên và ngày cuối cùng của tháng hiện tại
         today = now()
         start_of_month = today.replace(day=1)
-        end_of_month = today.replace(day=1).replace(month=today.month + 1) if today.month < 12 else today.replace(day=1, month=1, year=today.year + 1)
+        # Tính ngày đầu tháng tiếp theo
+        if today.month < 12:
+            end_of_month = today.replace(month=today.month + 1, day=1)
+        else:
+            end_of_month = today.replace(year=today.year + 1, month=1, day=1)
 
         # Lọc các đơn hàng đã thanh toán trong tháng này
         orders = Order.objects.filter(
@@ -143,10 +146,9 @@ class MonthlySalesView(APIView):
             created_at__lt=end_of_month
         )
 
-        # Tính tổng số lượng sản phẩm đã bán
-        total_quantity = orders.aggregate(total=Sum('orderdetail__quantity'))['total'] or 0
+        total_orders = orders.count()
 
-        return Response({"total_quantity": total_quantity}, status=200)
+        return Response({"total_quantity": total_orders}, status=200)
 
 class MonthlyRevenueView(APIView):
     """
