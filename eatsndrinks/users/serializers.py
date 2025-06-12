@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, AddressBook
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -62,4 +62,38 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
         if password:
             instance.set_password(password)
+        return super().update(instance, validated_data)
+    
+class AddressBookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AddressBook
+        fields = ["id", "user", "phone_number", "address", "is_default"]
+        extra_kwargs = {
+            "user": {"read_only": True}  # Đảm bảo trường user chỉ đọc, không cần gửi từ client
+        }
+
+    def create(self, validated_data):
+        """
+        Override create to ensure only one default address per user.
+        """
+        is_default = validated_data.get("is_default", False)
+        user = self.context["request"].user
+
+        # Nếu địa chỉ mới được đặt làm mặc định, cập nhật các địa chỉ khác thành phụ
+        if is_default:
+            AddressBook.objects.filter(user=user, is_default=True).update(is_default=False)
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Override update to ensure only one default address per user.
+        """
+        is_default = validated_data.get("is_default", instance.is_default)
+        user = self.context["request"].user
+
+        # Nếu địa chỉ được cập nhật thành mặc định, cập nhật các địa chỉ khác thành phụ
+        if is_default and not instance.is_default:
+            AddressBook.objects.filter(user=user, is_default=True).update(is_default=False)
+
         return super().update(instance, validated_data)

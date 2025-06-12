@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -8,10 +8,11 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
 from drf_spectacular.utils import extend_schema
-from .serializers import RegisterSerializer, LoginSerializer, UserUpdateSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserUpdateSerializer, AddressBookSerializer
 from rest_framework.permissions import AllowAny
-from .models import User
+from .models import User, AddressBook
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.exceptions import NotFound
 # Create your views here.
 # Register APIView
 class RegisterView(APIView):
@@ -151,3 +152,30 @@ class UserDetailView(RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         serializer.validated_data.pop('username', None)  # Prevent updating username
         return super().perform_update(serializer)
+
+class AddressBookViewSet(viewsets.ModelViewSet):
+    queryset = AddressBook.objects.all()
+    serializer_class = AddressBookSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Chỉ trả về địa chỉ của người dùng hiện tại
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Gán user hiện tại cho địa chỉ mới
+        serializer.save(user=self.request.user)
+
+class DefaultAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Lấy địa chỉ mặc định của người dùng hiện tại
+        user = request.user
+        default_address = AddressBook.objects.filter(user=user, is_default=True).first()
+
+        if not default_address:
+            raise NotFound("Không có địa chỉ mặc định nào được thiết lập.")
+
+        serializer = AddressBookSerializer(default_address)
+        return Response(serializer.data, status=status.HTTP_200_OK)
