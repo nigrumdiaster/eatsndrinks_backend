@@ -3,7 +3,7 @@ from users.models import User
 from catalogue.models import Product
 
 class Cart(models.Model):
-    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = "Giỏ Hàng"

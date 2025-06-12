@@ -10,6 +10,7 @@ from rest_framework.generics import RetrieveDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from .models import Cart
 from .serializers import CartSerializer
+from django.db import transaction
 
 class UserCartView(RetrieveDestroyAPIView):
     """Retrieve and delete the user's cart (GET, DELETE only)."""
@@ -80,17 +81,29 @@ class AddToCartView(CreateAPIView):
 
         product = get_object_or_404(Product, pk=product_id)
 
-        # Kiểm tra xem giỏ hàng đã tồn tại chưa, nếu chưa thì tạo mới
-        cart, created = Cart.objects.get_or_create(user=user)
+        with transaction.atomic():
+            # Xử lý trường hợp có nhiều cart (nếu có)
+            carts = Cart.objects.filter(user=user)
+            if carts.count() > 1:
+                # Giữ lại cart đầu tiên và xóa các cart còn lại
+                main_cart = carts.first()
+                # Di chuyển tất cả các items từ các cart khác vào main_cart
+                CartItem.objects.filter(cart__in=carts.exclude(id=main_cart.id)).update(cart=main_cart)
+                # Xóa các cart thừa
+                carts.exclude(id=main_cart.id).delete()
+                cart = main_cart
+            else:
+                # Nếu không có cart nào, tạo mới
+                cart, _ = Cart.objects.get_or_create(user=user)
 
-        # Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
-        cart_item, item_created = CartItem.objects.get_or_create(cart=cart, product=product)
+            # Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+            cart_item, item_created = CartItem.objects.get_or_create(cart=cart, product=product)
 
-        if not item_created:
-            cart_item.quantity += int(quantity)  # Cập nhật số lượng nếu đã tồn tại
-        else:
-            cart_item.quantity = int(quantity)
+            if not item_created:
+                cart_item.quantity += int(quantity)  # Cập nhật số lượng nếu đã tồn tại
+            else:
+                cart_item.quantity = int(quantity)
 
-        cart_item.save()
+            cart_item.save()
 
-        return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
+            return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
