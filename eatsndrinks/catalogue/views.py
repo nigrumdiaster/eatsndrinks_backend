@@ -105,6 +105,18 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
             queryset = queryset.filter(is_active=True)
         return queryset
 
+    @action(detail=True, methods=["get"], url_path="related-combos")
+    def get_related_combos(self, request, pk=None):
+        """Lấy danh sách combo có chứa sản phẩm này"""
+        product = self.get_object()
+        combos = ProductCombo.objects.filter(
+            items__product=product,
+            is_active=True
+        ).distinct()
+
+        serializer = ProductComboSerializer(combos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=["get"], url_path="random")
     def get_random_products(self, request):
         """Lấy 8 sản phẩm ngẫu nhiên"""

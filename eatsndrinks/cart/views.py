@@ -1,16 +1,17 @@
-from rest_framework.generics import RetrieveUpdateAPIView, DestroyAPIView, CreateAPIView, UpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, DestroyAPIView, CreateAPIView, UpdateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemSerializer, CartItemQuantitySerializer
 from django.shortcuts import get_object_or_404
-from catalogue.models import Product
+from catalogue.models import Product, ProductCombo
 from rest_framework.generics import RetrieveDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from .models import Cart
 from .serializers import CartSerializer
 from django.db import transaction
+from catalogue.serializers import ProductComboSerializer
 
 class UserCartView(RetrieveDestroyAPIView):
     """Retrieve and delete the user's cart (GET, DELETE only)."""
@@ -107,3 +108,33 @@ class AddToCartView(CreateAPIView):
             cart_item.save()
 
             return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
+
+class GetApplicableCombosView(RetrieveAPIView):
+    """Get all combos that can be applied to the current cart."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProductComboSerializer
+
+    def get(self, request, *args, **kwargs):
+        cart = Cart.objects.get(user=request.user)
+        cart_items = cart.cartitem_set.all()
+        
+        # Get all active combos
+        combos = ProductCombo.objects.filter(is_active=True)
+        applicable_combos = []
+
+        for combo in combos:
+            combo_items = combo.items.all()
+            can_apply = True
+            
+            # Check if all items in the combo are in the cart with sufficient quantity
+            for combo_item in combo_items:
+                cart_item = cart_items.filter(product=combo_item.product).first()
+                if not cart_item or cart_item.quantity < combo_item.quantity:
+                    can_apply = False
+                    break
+            
+            if can_apply:
+                applicable_combos.append(combo)
+
+        serializer = self.get_serializer(applicable_combos, many=True)
+        return Response(serializer.data)
