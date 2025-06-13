@@ -204,7 +204,6 @@ class ProductImageViewSet(
 class ProductComboViewSet(CustomPermissionMixin, viewsets.ModelViewSet):
     queryset = ProductCombo.objects.all()
     serializer_class = ProductComboSerializer
-    pagination_class = ProductPageNumberPagination
     http_method_names = ["get", "post", "put", "patch"]
 
     def get_queryset(self):
@@ -216,8 +215,6 @@ class ProductComboViewSet(CustomPermissionMixin, viewsets.ModelViewSet):
     @extend_schema(
         parameters=[
             OpenApiParameter(name="search", type=str, location=OpenApiParameter.QUERY, required=False, description="Tìm kiếm theo tên"),
-            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False),
-            OpenApiParameter(name="page_size", type=int, location=OpenApiParameter.QUERY, required=False),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -226,11 +223,6 @@ class ProductComboViewSet(CustomPermissionMixin, viewsets.ModelViewSet):
 
         if search_query:
             queryset = queryset.filter(name__icontains=search_query)
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
