@@ -137,6 +137,25 @@ class ProductComboSerializer(serializers.ModelSerializer):
             'combo_items'
         ]
 
+    def validate_combo_items(self, value):
+        if not value:
+            return value
+            
+        # Get all product IDs from the request
+        product_ids = [item['product'] for item in value]
+        
+        # Check if all products exist
+        from .models import Product
+        existing_products = Product.objects.filter(id__in=product_ids).values_list('id', flat=True)
+        invalid_ids = set(product_ids) - set(existing_products)
+        
+        if invalid_ids:
+            raise serializers.ValidationError(
+                f"Sản phẩm với ID {', '.join(map(str, invalid_ids))} không tồn tại."
+            )
+            
+        return value
+
     def get_total_original_price(self, obj):
         total = sum(
             item.product.price * item.quantity
