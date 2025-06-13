@@ -7,8 +7,11 @@ from .mixins import (
     ProductImageSchemaMixin,
     ProductSchemaMixin,
 )
-from .models import Category, Product, ProductImage
-from .serializers import CategorySerializer, ProductSerializer, ProductImageSerializer
+from .models import Category, Product, ProductImage, ProductCombo, ProductComboItem
+from .serializers import (
+    CategorySerializer, ProductSerializer, ProductImageSerializer,
+    ProductComboSerializer, ProductComboItemSerializer
+)
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework import status
@@ -196,3 +199,63 @@ class ProductImageViewSet(
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSerializer
     http_method_names = ["get", "post", "put", "patch"]
+
+
+class ProductComboViewSet(CustomPermissionMixin, viewsets.ModelViewSet):
+    queryset = ProductCombo.objects.all()
+    serializer_class = ProductComboSerializer
+    pagination_class = ProductPageNumberPagination
+    http_method_names = ["get", "post", "put", "patch"]
+
+    def get_queryset(self):
+        queryset = ProductCombo.objects.all().order_by("id")
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(is_active=True)
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="search", type=str, location=OpenApiParameter.QUERY, required=False, description="Tìm kiếm theo tên"),
+            OpenApiParameter(name="page", type=int, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="page_size", type=int, location=OpenApiParameter.QUERY, required=False),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        search_query = request.query_params.get("search")
+        queryset = self.get_queryset()
+
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def add_item(self, request, pk=None):
+        combo = self.get_object()
+        serializer = ProductComboItemSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save(combo=combo)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["delete"])
+    def remove_item(self, request, pk=None):
+        combo = self.get_object()
+        item_id = request.data.get("item_id")
+        
+        try:
+            item = combo.items.get(id=item_id)
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProductComboItem.DoesNotExist:
+            return Response(
+                {"detail": "Không tìm thấy món ăn trong combo."},
+                status=status.HTTP_404_NOT_FOUND
+            )

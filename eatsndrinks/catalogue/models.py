@@ -54,3 +54,30 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - Image {self.id}"
+
+class ProductCombo(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Combo Món Ăn"
+        verbose_name_plural = "Combo Món Ăn"
+
+    def __str__(self):
+        return f"{self.name} - Giảm {self.discount_amount}đ"
+
+class ProductComboItem(models.Model):
+    combo = models.ForeignKey(ProductCombo, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = "Món Ăn Trong Combo"
+        verbose_name_plural = "Món Ăn Trong Combo"
+
+    def __str__(self):
+        return f"{self.combo.name} - {self.product.name} x{self.quantity}"

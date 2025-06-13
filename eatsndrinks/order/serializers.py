@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Order, OrderDetail
 from cart.models import CartItem
+from catalogue.models import ProductCombo
 
 class OrderDetailSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source="product.name")
@@ -19,35 +20,56 @@ class OrderSerializer(serializers.ModelSerializer):
         extra_kwargs = {"user": {"read_only": True}, "total_price": {"read_only": True}, "status": {"read_only": True}}
 
     def create(self, validated_data):
-        user = self.context["request"].user  # Get the current user
-        cart_items = CartItem.objects.filter(cart__user=user)  # Get user's cart items
+        user = self.context["request"].user
+        cart_items = CartItem.objects.filter(cart__user=user)
 
         if not cart_items.exists():
             raise serializers.ValidationError("Giỏ hàng của bạn đang trống!")
 
-        # First, calculate the total price before creating the order
+        # Tính toán tổng tiền và kiểm tra combo
         total_price = 0
+        applied_combos = set()  # Theo dõi các combo đã áp dụng
+
+        # Lấy tất cả combo đang active
+        active_combos = ProductCombo.objects.filter(is_active=True)
+
+        # Tạo order với giá ban đầu
+        order = Order.objects.create(user=user, total_price=0, **validated_data)
+
+        # Xử lý từng item trong giỏ hàng
         for item in cart_items:
-            # Lấy giá đúng của sản phẩm theo flash sale nếu có
+            # Lấy giá sản phẩm (có flash sale không)
             if item.product.is_flash_sale_active() and item.product.flash_sale_price:
                 unit_price = item.product.flash_sale_price
             else:
                 unit_price = item.product.price
 
-            total_price += unit_price * item.quantity
+            # Kiểm tra xem sản phẩm có thuộc combo nào không
+            item_in_combo = False
+            for combo in active_combos:
+                if combo.id in applied_combos:
+                    continue  # Bỏ qua combo đã áp dụng
 
-        # Create the order with the calculated total_price
-        order = Order.objects.create(user=user, total_price=total_price, **validated_data)
+                combo_items = combo.items.all()
+                # Kiểm tra xem tất cả sản phẩm trong combo có trong giỏ hàng không
+                combo_products = {ci.product: ci.quantity for ci in combo_items}
+                cart_products = {item.product: item.quantity for item in cart_items}
 
-        # Create order details
-        for item in cart_items:
-            # Lấy giá đúng của sản phẩm theo flash sale nếu có
-            if item.product.is_flash_sale_active() and item.product.flash_sale_price:
-                unit_price = item.product.flash_sale_price
-            else:
-                unit_price = item.product.price
+                # Kiểm tra số lượng sản phẩm trong combo có đủ không
+                if all(
+                    product in cart_products and cart_products[product] >= quantity
+                    for product, quantity in combo_products.items()
+                ):
+                    # Áp dụng giảm giá combo
+                    total_price += (unit_price * item.quantity) - combo.discount_amount
+                    applied_combos.add(combo.id)
+                    item_in_combo = True
+                    break
 
-            # Create order detail with correct unit price and total price
+            if not item_in_combo:
+                total_price += unit_price * item.quantity
+
+            # Tạo order detail
             OrderDetail.objects.create(
                 order=order,
                 product=item.product,
@@ -56,7 +78,11 @@ class OrderSerializer(serializers.ModelSerializer):
                 total_price=unit_price * item.quantity
             )
 
-        # Clear the user's cart after placing an order
+        # Cập nhật tổng tiền của order
+        order.total_price = total_price
+        order.save()
+
+        # Xóa giỏ hàng sau khi đặt hàng
         cart_items.delete()
 
         return order

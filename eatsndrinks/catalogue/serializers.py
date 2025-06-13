@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
-from .models import Category, Product, ProductImage
+from .models import Category, Product, ProductImage, ProductCombo, ProductComboItem
 
 
 # Category Serializer
@@ -105,4 +105,77 @@ class ProductSerializer(serializers.ModelSerializer):
             for image in uploaded_images:
                 ProductImage.objects.create(product=instance, image=image)
 
+        return instance
+
+
+class ProductComboItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_price = serializers.DecimalField(source='product.price', max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = ProductComboItem
+        fields = ['id', 'product', 'product_name', 'product_price', 'quantity']
+
+
+class ProductComboSerializer(serializers.ModelSerializer):
+    items = ProductComboItemSerializer(many=True, read_only=True)
+    total_original_price = serializers.SerializerMethodField()
+    total_discounted_price = serializers.SerializerMethodField()
+    combo_items = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=False,
+        help_text="Danh sách sản phẩm trong combo. Format: [{'product': id, 'quantity': số lượng}]"
+    )
+
+    class Meta:
+        model = ProductCombo
+        fields = [
+            'id', 'name', 'description', 'discount_amount',
+            'is_active', 'created_at', 'updated_at',
+            'items', 'total_original_price', 'total_discounted_price',
+            'combo_items'
+        ]
+
+    def get_total_original_price(self, obj):
+        total = sum(
+            item.product.price * item.quantity
+            for item in obj.items.all()
+        )
+        return total
+
+    def get_total_discounted_price(self, obj):
+        original_price = self.get_total_original_price(obj)
+        return max(0, original_price - obj.discount_amount)
+
+    def create(self, validated_data):
+        combo_items = validated_data.pop('combo_items', [])
+        combo = ProductCombo.objects.create(**validated_data)
+        
+        # Tạo các items cho combo
+        for item_data in combo_items:
+            ProductComboItem.objects.create(
+                combo=combo,
+                product_id=item_data['product'],
+                quantity=item_data['quantity']
+            )
+        
+        return combo
+
+    def update(self, instance, validated_data):
+        combo_items = validated_data.pop('combo_items', None)
+        instance = super().update(instance, validated_data)
+        
+        # Nếu có combo_items trong request, cập nhật lại toàn bộ items
+        if combo_items is not None:
+            # Xóa tất cả items cũ
+            instance.items.all().delete()
+            # Tạo items mới
+            for item_data in combo_items:
+                ProductComboItem.objects.create(
+                    combo=instance,
+                    product_id=item_data['product'],
+                    quantity=item_data['quantity']
+                )
+        
         return instance
