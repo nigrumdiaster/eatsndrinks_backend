@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import OrderCreateView, AdminOrderView, AdminOrderDetailView, UserOrderListView, UserOrderDetailView, RecentPaidCustomersView, MonthlySalesView, MonthlyRevenueView
+from .views import OrderCreateView, AdminOrderView, AdminOrderDetailView, UserOrderListView, UserOrderDetailView, RecentPaidCustomersView, MonthlySalesView, MonthlyRevenueView, YearlyRevenueView
 
 urlpatterns = [
     path("", UserOrderListView.as_view(), name="user-orders"),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('admin/recent-paid-customers/', RecentPaidCustomersView.as_view(), name='recent-paid-customers'),
     path('admin/monthly-sales/', MonthlySalesView.as_view(), name='monthly-sales'),
     path('admin/monthly-revenue/', MonthlyRevenueView.as_view(), name='monthly-revenue'),
+    path('admin/yearly-revenue/', YearlyRevenueView.as_view(), name='yearly-revenue'),
 ]

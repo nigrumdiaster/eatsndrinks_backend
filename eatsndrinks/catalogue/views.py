@@ -25,6 +25,7 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
+from rest_framework.permissions import IsAdminUser
 
 class CategoryViewSet(
     CustomPermissionMixin, CategorySchemaMixin, viewsets.ModelViewSet
@@ -104,6 +105,62 @@ class ProductViewSet(CustomPermissionMixin, ProductSchemaMixin, viewsets.ModelVi
         if not self.request.user.is_staff:
             queryset = queryset.filter(is_active=True)
         return queryset
+
+    @action(detail=False, methods=["get"], url_path="stats", permission_classes=[IsAdminUser])
+    @extend_schema(
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'current_month_products': {'type': 'integer'},
+                    'previous_month_products': {'type': 'integer'},
+                    'increase_percentage': {'type': 'number'},
+                }
+            }
+        }
+    )
+    def get_product_stats(self, request):
+        """Lấy thống kê số lượng sản phẩm mới trong tháng này và so sánh với tháng trước"""
+        # Get current date in UTC
+        now = timezone.now()
+        
+        # Calculate first day of current month
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate first day of previous month
+        if now.month == 1:
+            previous_month_start = now.replace(year=now.year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            previous_month_start = now.replace(month=now.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate first day of next month
+        if now.month == 12:
+            next_month_start = now.replace(year=now.year+1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            next_month_start = now.replace(month=now.month+1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Get product counts
+        current_month_products = Product.objects.filter(
+            created_at__gte=current_month_start,
+            created_at__lt=next_month_start
+        ).count()
+        
+        previous_month_products = Product.objects.filter(
+            created_at__gte=previous_month_start,
+            created_at__lt=current_month_start
+        ).count()
+        
+        # Calculate increase percentage
+        if previous_month_products == 0:
+            increase_percentage = 100 if current_month_products > 0 else 0
+        else:
+            increase_percentage = ((current_month_products - previous_month_products) / previous_month_products) * 100
+        
+        return Response({
+            'current_month_products': current_month_products,
+            'previous_month_products': previous_month_products,
+            'increase_percentage': round(increase_percentage, 2)
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="related-combos")
     def get_related_combos(self, request, pk=None):

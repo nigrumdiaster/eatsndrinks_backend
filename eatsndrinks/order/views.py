@@ -197,4 +197,50 @@ class MonthlyRevenueView(APIView):
             "percentage_change": percentage_change
         }, status=200)
 
+class YearlyRevenueView(APIView):
+    """
+    API để trả về doanh thu của 12 tháng gần nhất tính từ tháng hiện tại
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        today = now()
+        monthly_revenue = []
+        
+        # Lặp qua 12 tháng gần nhất
+        for i in range(12):
+            # Tính ngày đầu và cuối của mỗi tháng
+            if today.month - i > 0:
+                start_month = today.month - i
+                start_year = today.year
+            else:
+                start_month = today.month - i + 12
+                start_year = today.year - 1
+                
+            start_date = today.replace(day=1, month=start_month, year=start_year)
+            
+            # Tính ngày đầu tháng tiếp theo
+            if start_month < 12:
+                end_month = start_month + 1
+                end_year = start_year
+            else:
+                end_month = 1
+                end_year = start_year + 1
+            end_date = today.replace(day=1, month=end_month, year=end_year)
+            
+            # Tính doanh thu của tháng
+            monthly_total = Order.objects.filter(
+                payment_status="paid",
+                created_at__gte=start_date,
+                created_at__lt=end_date
+            ).aggregate(total=Sum('total_price'))['total'] or 0
+            
+            # Thêm vào danh sách kết quả
+            monthly_revenue.append({
+                'month': start_date.strftime('%Y-%m'),
+                'revenue': monthly_total
+            })
+        
+        return Response(monthly_revenue, status=200)
+
 

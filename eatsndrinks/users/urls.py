@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import RegisterView, LoginView, TokenRefreshView, AdminUserDetailView, AdminUserListView, UserDetailView, IsAdminView, AddressBookViewSet, DefaultAddressView
+from .views import RegisterView, LoginView, TokenRefreshView, AdminUserDetailView, AdminUserListView, UserDetailView, IsAdminView, AddressBookViewSet, DefaultAddressView, AdminUserStatsView
 
 # Sử dụng DefaultRouter để tự động tạo URL cho AddressBookViewSet
 router = DefaultRouter()
@@ -13,6 +13,7 @@ urlpatterns = [
     # Admin: Manage all users
     path('admin/users/', AdminUserListView.as_view(), name='admin-user-list'),  # GET only
     path('admin/user/<int:id>/', AdminUserDetailView.as_view(), name='admin-user-detail'),  # GET, PUT, PATCH
+    path('admin/stats/', AdminUserStatsView.as_view(), name='admin-user-stats'),  # GET user registration stats
     # User: Manage own profile
     path('user/profile/', UserDetailView.as_view(), name='user-profile'),
     path("is-admin/", IsAdminView.as_view(), name="is-admin"),

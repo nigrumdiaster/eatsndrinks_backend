@@ -13,6 +13,9 @@ from rest_framework.permissions import AllowAny
 from .models import User, AddressBook
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.exceptions import NotFound
+from datetime import datetime, timedelta
+from django.db.models import Count
+from django.utils import timezone
 # Create your views here.
 # Register APIView
 class RegisterView(APIView):
@@ -179,3 +182,60 @@ class DefaultAddressView(APIView):
 
         serializer = AddressBookSerializer(default_address)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AdminUserStatsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'current_month_users': {'type': 'integer'},
+                    'previous_month_users': {'type': 'integer'},
+                    'increase_percentage': {'type': 'number'},
+                }
+            }
+        }
+    )
+    def get(self, request):
+        # Get current date in UTC
+        now = timezone.now()
+        
+        # Calculate first day of current month
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate first day of previous month
+        if now.month == 1:
+            previous_month_start = now.replace(year=now.year-1, month=12, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            previous_month_start = now.replace(month=now.month-1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Calculate first day of next month
+        if now.month == 12:
+            next_month_start = now.replace(year=now.year+1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            next_month_start = now.replace(month=now.month+1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Get user counts
+        current_month_users = User.objects.filter(
+            date_joined__gte=current_month_start,
+            date_joined__lt=next_month_start
+        ).count()
+        
+        previous_month_users = User.objects.filter(
+            date_joined__gte=previous_month_start,
+            date_joined__lt=current_month_start
+        ).count()
+        
+        # Calculate increase percentage
+        if previous_month_users == 0:
+            increase_percentage = 100 if current_month_users > 0 else 0
+        else:
+            increase_percentage = ((current_month_users - previous_month_users) / previous_month_users) * 100
+        
+        return Response({
+            'current_month_users': current_month_users,
+            'previous_month_users': previous_month_users,
+            'increase_percentage': round(increase_percentage, 2)
+        }, status=status.HTTP_200_OK)
