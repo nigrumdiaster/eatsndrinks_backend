@@ -11,3 +11,10 @@ mysqlclient==2.2.4
 django-cors-headers==4.7.0
 python-dotenv==1.1.0
 requests==2.32.3
+
+# Chatbot and AI dependencies
+openai==1.12.0
+langchain==0.1.0
+langchain-openai==0.0.5
+python-decouple==3.8
+httpx==0.27.2

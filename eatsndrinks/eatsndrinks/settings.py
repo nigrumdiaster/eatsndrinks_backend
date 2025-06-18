@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "analytics",
     "api",
     "cart",
+    "chatbot",
     "contact",
     "content",
     "catalogue",
