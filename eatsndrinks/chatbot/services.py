@@ -120,7 +120,8 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
             'is_search': False,
             'is_recommendation_request': False,
             'is_greeting': False,
-            'is_general_question': False
+            'is_general_question': False,
+            'is_flash_sale': False
         }
         
         message_lower = message.lower()
@@ -149,6 +150,12 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
             intent_analysis['is_recommendation_request'] = True
             intent_analysis['intent'] = 'recommendation'
         
+        # Check for flash sale intent
+        flash_sale_keywords = ['flash sale', 'khuyến mãi', 'giảm giá', 'sale', 'đang khuyến mãi']
+        if any(keyword in message_lower for keyword in flash_sale_keywords):
+            intent_analysis['intent'] = 'flash_sale'
+            intent_analysis['is_flash_sale'] = True
+        
         # Extract category keywords
         categories = Category.objects.filter(is_active=True)
         for category in categories:
@@ -165,11 +172,18 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
                 if intent_analysis['intent'] == 'general_query':
                     intent_analysis['intent'] = 'price_search'
         
+        print('[DEBUG] intent_analysis:', intent_analysis)
         return intent_analysis
     
     def get_recommendations(self, intent_analysis: Dict[str, Any], limit: int = 5) -> List[Product]:
         """Get product recommendations based on intent analysis"""
         products = Product.objects.filter(is_active=True)
+        
+        # Nếu intent là flash_sale thì chỉ lấy sản phẩm đang flash sale
+        if intent_analysis.get('is_flash_sale'):
+            products = [p for p in products if p.is_flash_sale_active()]
+            products = sorted(products, key=lambda p: p.flash_sale_price or p.price)[:limit]
+            return products
         
         # Apply category filter
         if intent_analysis['category_filter']:
@@ -184,6 +198,7 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
             # Default: recommend products with flash sale first, then by popularity
             products = products.order_by('-flash_sale_price', '-created_at')[:limit]
         
+        print('[DEBUG] Số sản phẩm flash sale recommendations:', len(products), [p.id for p in products])
         return list(products)
     
     def convert_product_to_dict(self, product: Product) -> Dict[str, Any]:
@@ -203,26 +218,22 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
         """Generate chatbot response using OpenAI"""
         if not self.openai_api_key or not self.client:
             return self.generate_fallback_response(message, session)
-        
         try:
             system_prompt = self.create_system_prompt()
             chat_history = self.get_chat_history(session)
-            
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(chat_history)
             messages.append({"role": "user", "content": message})
-            
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 max_tokens=500,
                 temperature=0.7
             )
-            
             bot_response = response.choices[0].message.content
-            
             # Try to extract recommendations from response
             recommendations = []
+            intent_analysis = self.analyze_user_intent(message)
             try:
                 # Method 1: Look for JSON format
                 if '{"recommendations":' in bot_response:
@@ -236,54 +247,58 @@ Hãy trả lời ngắn gọn, thân thiện và hữu ích!
                                 id__in=product_ids, is_active=True
                             )
                             recommendations = [self.convert_product_to_dict(p) for p in recommended_products]
-                
                 # Method 2: Extract product names from text and find matching products
                 if not recommendations:
                     # Get all product names for matching
                     all_products = Product.objects.filter(is_active=True)
+                    # Nếu intent là flash sale, chỉ lấy sản phẩm đang flash sale
+                    if intent_analysis.get('is_flash_sale'):
+                        all_products = [p for p in all_products if p.is_flash_sale_active()]
                     product_names = {p.name.lower(): p for p in all_products}
-                    
-                    # Look for product names in the response
                     response_lower = bot_response.lower()
                     found_products = []
-                    
                     for product_name, product in product_names.items():
                         if product_name in response_lower:
                             found_products.append(product)
-                    
                     # Take first 5 products found
                     recommendations = [self.convert_product_to_dict(p) for p in found_products[:5]]
-                
                 # Method 3: Only use intent analysis if it's NOT a greeting
                 if not recommendations:
-                    intent_analysis = self.analyze_user_intent(message)
                     # Only recommend if it's not a greeting
                     if not intent_analysis['is_greeting']:
                         recommended_products = self.get_recommendations(intent_analysis, 5)
                         recommendations = [self.convert_product_to_dict(p) for p in recommended_products]
-                    
             except Exception as e:
                 print(f"Error extracting recommendations: {e}")
                 # Fallback to intent analysis only if not greeting
-                intent_analysis = self.analyze_user_intent(message)
                 if not intent_analysis['is_greeting']:
                     recommended_products = self.get_recommendations(intent_analysis, 5)
                     recommendations = [self.convert_product_to_dict(p) for p in recommended_products]
-            
+
+            # --- CUSTOM FLASH SALE MESSAGE ---
+            if intent_analysis.get('is_flash_sale'):
+                if recommendations:
+                    msg = "Hiện tại, có một số sản phẩm đang được giảm giá flash sale, bao gồm:\n\n"
+                    for idx, p in enumerate(recommendations, 1):
+                        msg += f"{idx}. {p['name']} - Giá flash sale: {int(p['flash_sale_price']):,} VND\n"
+                    msg += "\nNếu bạn quan tâm đến bất kỳ sản phẩm nào, hãy cho mình biết để được hỗ trợ thêm nhé!"
+                else:
+                    msg = "Hiện tại không có sản phẩm nào đang flash sale."
+            else:
+                msg = bot_response
+            print('[DEBUG] Số sản phẩm flash sale recommendations:', len(recommendations), [p['id'] for p in recommendations])
             return {
-                'response': bot_response,
+                'response': msg,
                 'recommendations': recommendations,
                 'metadata': {
                     'model_used': 'gpt-3.5-turbo',
                     'tokens_used': response.usage.total_tokens if hasattr(response, 'usage') else 0
                 }
             }
-            
         except Exception as e:
             # Log the error for debugging
             print(f"OpenAI API Error: {str(e)}")
             print(f"Error type: {type(e).__name__}")
-            
             # Return fallback with error info
             fallback_result = self.generate_fallback_response(message, session)
             fallback_result['metadata']['error'] = str(e)
