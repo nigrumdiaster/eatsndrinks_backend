@@ -127,6 +127,7 @@ class LoginView(APIView):
     
 class IsAdminView(APIView):
     permission_classes = [IsAuthenticated]  # Chỉ cho phép user đã đăng nhập truy cập
+    serializer_class = None  # No serializer needed for simple response
 
     def get(self, request):
         return Response({"is_admin": request.user.is_staff})
@@ -171,6 +172,7 @@ class AddressBookViewSet(viewsets.ModelViewSet):
 
 class DefaultAddressView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = AddressBookSerializer
 
     def get(self, request):
         # Lấy địa chỉ mặc định của người dùng hiện tại

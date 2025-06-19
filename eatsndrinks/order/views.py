@@ -115,6 +115,7 @@ class RecentPaidCustomersView(APIView):
     API để lấy thông tin 5 khách hàng gần đây đã thanh toán
     """
     permission_classes = [IsAdminUser]
+    serializer_class = RecentCustomerSerializer
 
     def get(self, request, *args, **kwargs):
         # Lấy danh sách 5 đơn hàng đã thanh toán gần đây
@@ -129,6 +130,7 @@ class MonthlySalesView(APIView):
     API để trả về số lượng đơn hàng đã thanh toán trong tháng này
     """
     permission_classes = [IsAdminUser]
+    serializer_class = None  # No serializer needed for simple response
 
     def get(self, request, *args, **kwargs):
         today = now()
@@ -155,6 +157,7 @@ class MonthlyRevenueView(APIView):
     API để trả về tổng doanh thu tháng này và phần trăm tăng/giảm so với tháng trước
     """
     permission_classes = [IsAdminUser]
+    serializer_class = None  # No serializer needed for simple response
 
     def get(self, request, *args, **kwargs):
         # Lấy ngày đầu tiên và ngày cuối cùng của tháng hiện tại
@@ -202,6 +205,7 @@ class YearlyRevenueView(APIView):
     API để trả về doanh thu của 12 tháng gần nhất tính từ tháng hiện tại
     """
     permission_classes = [IsAdminUser]
+    serializer_class = None  # No serializer needed for simple response
 
     def get(self, request, *args, **kwargs):
         today = now()

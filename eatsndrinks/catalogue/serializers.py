@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from .models import Category, Product, ProductImage, ProductCombo, ProductComboItem
+from drf_spectacular.utils import extend_schema_field
+from decimal import Decimal
 
 
 # Category Serializer
@@ -64,9 +66,11 @@ class ProductSerializer(serializers.ModelSerializer):
             "uploaded_images",
         ]
 
+    @extend_schema_field(serializers.BooleanField())
     def get_is_flash_sale_active(self, obj):
         return obj.is_flash_sale_active()
 
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
     def get_current_price(self, obj):
         return obj.current_price()
 
@@ -156,6 +160,7 @@ class ProductComboSerializer(serializers.ModelSerializer):
             
         return value
 
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
     def get_total_original_price(self, obj):
         total = sum(
             item.product.price * item.quantity
@@ -163,6 +168,7 @@ class ProductComboSerializer(serializers.ModelSerializer):
         )
         return total
 
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
     def get_total_discounted_price(self, obj):
         original_price = self.get_total_original_price(obj)
         return max(0, original_price - obj.discount_amount)

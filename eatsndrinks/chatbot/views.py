@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from .serializers import (
     ChatRequestSerializer, 
@@ -121,24 +122,26 @@ def chat_history(request):
     except ChatSession.DoesNotExist:
         return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
-@extend_schema(
-    tags=['Chatbot'],
-    summary='Tạo session chat mới',
-    description='Tạo một session chat mới',
-    responses={
-        201: ChatSessionSerializer,
-    }
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def create_session(request):
+class CreateSessionView(APIView):
     """
     Tạo session chat mới
     """
-    chatbot_service = ChatbotService()
-    session = chatbot_service.get_or_create_session()
-    serializer = ChatSessionSerializer(session)
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    permission_classes = [AllowAny]
+    serializer_class = ChatSessionSerializer
+
+    @extend_schema(
+        tags=['Chatbot'],
+        summary='Tạo session chat mới',
+        description='Tạo một session chat mới',
+        responses={
+            201: ChatSessionSerializer,
+        }
+    )
+    def post(self, request):
+        chatbot_service = ChatbotService()
+        session = chatbot_service.get_or_create_session()
+        serializer = ChatSessionSerializer(session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @extend_schema(
     tags=['Chatbot'],

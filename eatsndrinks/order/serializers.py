@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Order, OrderDetail
 from cart.models import CartItem
 from catalogue.models import ProductCombo
+from drf_spectacular.utils import extend_schema_field
 
 class OrderDetailSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source="product.name")
@@ -103,6 +104,7 @@ class AdminOrderSerializer(serializers.ModelSerializer):
             "created_at": {"read_only": True}  # Không thay đổi thời gian tạo
         }
 
+    @extend_schema_field(serializers.CharField())
     def get_full_name(self, obj):
         # Lấy họ và tên từ user
         return f"{obj.user.first_name} {obj.user.last_name}"
@@ -122,6 +124,7 @@ class RecentCustomerSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["customer_name", "customer_phone", "total_price"]
 
+    @extend_schema_field(serializers.CharField())
     def get_customer_name(self, obj):
         # Lấy tên đầy đủ từ first_name và last_name
         return f"{obj.user.first_name} {obj.user.last_name}"

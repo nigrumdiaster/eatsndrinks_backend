@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Cart, CartItem
 from catalogue.models import Product  # Import Product model
+from drf_spectacular.utils import extend_schema_field
+from decimal import Decimal
 
 from rest_framework import serializers
 from .models import Cart, CartItem
@@ -16,6 +18,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = ["id", "product", "product_name", "product_mainimage", "product_price", "quantity"]
 
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
     def get_product_price(self, obj):
         product = obj.product
         try:
