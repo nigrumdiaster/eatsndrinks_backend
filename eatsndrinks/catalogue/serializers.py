@@ -115,10 +115,20 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductComboItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     product_price = serializers.DecimalField(source='product.price', max_digits=10, decimal_places=2, read_only=True)
+    mainimage = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProductComboItem
-        fields = ['id', 'product', 'product_name', 'product_price', 'quantity']
+        fields = ['id', 'product', 'product_name', 'product_price', 'quantity', 'mainimage']
+
+    def get_mainimage(self, obj):
+        request = self.context.get('request')
+        if obj.product.mainimage:
+            url = obj.product.mainimage.url
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
+        return None
 
 
 class ProductComboSerializer(serializers.ModelSerializer):
